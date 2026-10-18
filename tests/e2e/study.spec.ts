@@ -39,7 +39,10 @@ test('Prep Hub exposes every track, exact practice links and free-resource filte
 }) => {
   await page.goto('/#/prep-hub');
   await expect(page.getByRole('heading', { name: 'Prep Hub', exact: true })).toBeVisible();
-  await expect(page.locator('.prep-course')).toHaveCount(6);
+  await expect(page.locator('.prep-course')).toHaveCount(5);
+  await expect(page.getByRole('heading', { name: 'C++ for Beginners', exact: true })).toHaveCount(
+    0,
+  );
   await page.getByLabel('Search Prep Hub').fill('Two Sum');
   const practice = page.locator('.prep-resource').filter({ hasText: 'LeetCode · Two Sum' }).first();
   await expect(practice).toHaveAttribute('href', 'https://leetcode.com/problems/two-sum/');

@@ -2,7 +2,7 @@
 
 ## Prep Hub update - 17 October 2026
 
-Added a separate searchable resource index for all four takeUforward Prep Hub tracks: 16 public paths, 239 modules, 2,514 syllabus occurrences and 1,355 topic identities. The index has 497 distinct practice destinations among 582 shared resources, with direct canonical LeetCode links, GFG/source practice, free documentation and existing local study shortcuts. It includes access labels, free/practice filters, collapsible modules and mobile layouts. This expands linked syllabus coverage; it does not count external lesson/quiz titles as locally authored content. See PREP_HUB.md for provenance and exact scope.
+Added a separate searchable resource index for all four takeUforward Prep Hub tracks: 15 public paths, 230 modules, 2,483 syllabus occurrences and 1,324 topic identities. The index has 497 distinct practice destinations among 581 shared resources, with direct canonical LeetCode links, GFG/source practice, free documentation and existing local study shortcuts. It includes access labels, free/practice filters, collapsible modules and mobile layouts. This expands linked syllabus coverage; it does not count external lesson/quiz titles as locally authored content. See PREP_HUB.md for provenance and exact scope.
 
 Link validation matched 339 problem slugs against LeetCode metadata and received successful HEAD responses for the other 243 resources. No unverified resource URLs remain in this snapshot. Canonical matching and HTTP reachability are reported separately in content/prep-link-report.json.
 

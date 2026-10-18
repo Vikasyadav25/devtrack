@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-17T06:31:28.971Z",
+  "generatedAt": "2026-10-18T12:40:31.441Z",
   "published": {
     "patterns": 10,
     "problems": 110,
@@ -11,9 +11,9 @@
   },
   "unverifiedProblemLinks": 110,
   "prepHub": {
-    "courses": 16,
-    "modules": 239,
-    "uniqueEntries": 1355,
+    "courses": 15,
+    "modules": 230,
+    "uniqueEntries": 1324,
     "practiceLinks": 497,
     "unverifiedResources": 0
   },

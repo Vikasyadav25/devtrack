@@ -1,6 +1,6 @@
 # DevTrack
 
-Prep Hub: browse all four preparation tracks at `/#/prep-hub`, including 16 public syllabus paths, topic references and direct practice links. See [catalog scope and sources](docs/PREP_HUB.md).
+Prep Hub: browse all four preparation tracks at `/#/prep-hub`, including 15 public syllabus paths, topic references and direct practice links. See [catalog scope and sources](docs/PREP_HUB.md).
 
 A private Java/backend interview study workspace: original lessons, linked DSA practice, honest attempt history, notes and deterministic spaced review. React + Vite + TypeScript, Tailwind, local shadcn-style primitives, TanStack Query, React Hook Form/Zod, Hono Worker and Cloudflare D1.
 
