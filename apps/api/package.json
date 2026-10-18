@@ -1,0 +1,5 @@
+{
+  "name": "@devtrack/api",
+  "private": true,
+  "type": "module"
+}

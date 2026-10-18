@@ -1,0 +1,55 @@
+name = "devtrack-api"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+ENVIRONMENT = "production"
+AUTH_PROVIDER = "email"
+GOOGLE_CLIENT_ID = ""
+ALLOWED_ORIGIN = "https://YOUR_USERNAME.github.io"
+ACCESS_TEAM_DOMAIN = "https://YOUR_TEAM.cloudflareaccess.com"
+ACCESS_AUD = "CONFIGURE_ACCESS_APPLICATION_AUDIENCE"
+OWNER_EMAIL = "CONFIGURE_OWNER_EMAIL"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "devtrack"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "../../migrations"
+
+[env.test.vars]
+AUTH_PROVIDER = "email"
+GOOGLE_CLIENT_ID = ""
+ENVIRONMENT = "local"
+LOCAL_AUTH = "false"
+LOCAL_EMAIL_PREVIEW = "true"
+APP_URL = "http://127.0.0.1:5174"
+ALLOWED_ORIGIN = "http://127.0.0.1:5174"
+OWNER_EMAIL = "local@devtrack.test"
+ACCESS_TEAM_DOMAIN = ""
+ACCESS_AUD = ""
+
+[[env.test.d1_databases]]
+binding = "DB"
+database_name = "devtrack-test"
+database_id = "00000000-0000-0000-0000-000000000001"
+migrations_dir = "../../migrations"
+
+[env.local.vars]
+AUTH_PROVIDER = "email"
+LOCAL_EMAIL_PREVIEW = "true"
+APP_URL = "http://localhost:5173"
+GOOGLE_CLIENT_ID = ""
+ENVIRONMENT = "local"
+LOCAL_AUTH = "false"
+ALLOWED_ORIGIN = "http://localhost:5173"
+OWNER_EMAIL = "CONFIGURE_OWNER_EMAIL"
+ACCESS_TEAM_DOMAIN = ""
+ACCESS_AUD = ""
+
+[[env.local.d1_databases]]
+binding = "DB"
+database_name = "devtrack"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "../../migrations"

@@ -1,0 +1,5 @@
+{
+  "name": "@devtrack/shared",
+  "private": true,
+  "type": "module"
+}

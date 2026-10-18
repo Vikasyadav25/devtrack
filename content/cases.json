@@ -1,0 +1,770 @@
+[
+  {
+    "slug": "library-management",
+    "kind": "LLD",
+    "title": "Library lending system",
+    "level": "intermediate",
+    "prompt": "Design borrowing and returning physical book copies. Model a title separately from a lendable copy, and prevent one copy from being lent twice.",
+    "clarifyingQuestions": [
+      "Are loans per physical copy or title?",
+      "Can a member hold multiple loans?",
+      "Are reservations and fines required?"
+    ],
+    "functionalRequirements": [
+      "Find available copies of a title",
+      "Borrow an available copy",
+      "Return a copy and close its active loan"
+    ],
+    "nonFunctionalRequirements": [
+      "A copy has at most one active loan",
+      "Borrow and return must have atomic state transitions",
+      "Reject invalid state transitions without partial changes"
+    ],
+    "outOfScope": [
+      "Multi-region active-active writes in the baseline",
+      "Unspecified payment, billing or social features beyond the stated requirements"
+    ],
+    "entities": ["BookTitle", "BookCopy", "Member", "Loan"],
+    "apiContracts": [
+      "POST /copies/{id}/loans accepts memberId and returns loanId",
+      "POST /loans/{id}/return closes a loan idempotently"
+    ],
+    "dataModel": "BookCopy(id, titleId, state). Loan(id, copyId, memberId, borrowedAt, returnedAt). A database partial uniqueness constraint or equivalent transactional design enforces one active loan per copy.",
+    "mermaidDiagrams": [
+      "flowchart LR\n Member --> LendingService\n LendingService --> CopyRepository\n LendingService --> LoanRepository\n LendingService --> EligibilityPolicy"
+    ],
+    "baselineDesign": "Separate catalog metadata from copy availability. A lending service validates member eligibility and performs an atomic available-to-loaned transition before creating the loan. Return addresses a specific loan, so retrying an old return cannot close a newer loan for the same copy. Keep policy decisions, such as loan duration, behind a small interface only when they have real variation. Do not put mutable availability on a shared BookTitle object: several physical copies can be in different states. In a persistent implementation, lock or conditionally update the copy row and insert the loan in one transaction. An audit record captures who initiated the transition without becoming the source of current availability.",
+    "tradeoffs": [
+      "A synchronized in-memory repository is easy to demonstrate but only coordinates one process",
+      "A database unique constraint is a stronger final guard than a prior availability query",
+      "Separate title and copy models add one join but preserve correct identity"
+    ],
+    "failureModes": [
+      "A borrower retries after a timeout",
+      "Two members request the last available copy",
+      "A return references a loan that is already closed"
+    ],
+    "scalingOptions": [
+      "Index title lookup independently from active loans",
+      "Partition high-volume audit events without weakening the active-loan constraint"
+    ],
+    "capacityEstimation": "",
+    "javaSkeleton": "public class Main {\n    static final class Lending {\n        private final java.util.Map<String,String> active = new java.util.HashMap<>();\n        synchronized boolean borrow(String copy, String member) {\n            return active.putIfAbsent(copy, member) == null;\n        }\n        synchronized boolean giveBack(String copy, String member) {\n            return active.remove(copy, member);\n        }\n    }\n    static void test() {\n        var lending = new Lending();\n        if (!lending.borrow(\"copy-1\", \"ada\")) throw new AssertionError();\n        if (lending.borrow(\"copy-1\", \"bob\")) throw new AssertionError();\n        if (!lending.giveBack(\"copy-1\", \"ada\")) throw new AssertionError();\n    }\n    public static void main(String[] args) { test(); System.out.println(\"PASS\"); }\n}\n",
+    "concurrencyConcerns": [
+      "An in-memory monitor protects the demo map",
+      " production borrowing and loan insertion need a shared transaction",
+      "Lock copies in a stable order if a request borrows several"
+    ],
+    "testingStrategy": [
+      "Test duplicate borrowing and unauthorized returns",
+      "Test two borrowers racing for one copy",
+      "Test retrying return after a new loan has started"
+    ],
+    "followupQuestions": [
+      "Which single invariant would you protect first?",
+      "How does a retry differ from a new logical request?",
+      "What happens after a timeout with an unknown outcome?",
+      "Which metric reveals the next bottleneck?",
+      "How would you recover after a process or storage failure?",
+      "Which requirement would force a different partitioning strategy?"
+    ],
+    "evaluationRubric": "Score requirements, invariants, baseline correctness, failure recovery and tradeoff explanation from 1 to 5. A 1 names components without a coherent flow; a 3 provides a consistent baseline and handles the main failure path; a 5 ties concurrency, recovery, security and measured capacity to explicit requirements. These are self-assessment anchors, not company hiring cutoffs.",
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "vending-machine",
+    "kind": "LLD",
+    "title": "Vending machine state model",
+    "level": "intermediate",
+    "prompt": "Design a machine that accepts credit and dispenses one selected product. Separate payment state from stock state and define what a failed dispense means.",
+    "clarifyingQuestions": [
+      "Which payment instruments are accepted?",
+      "Can the customer cancel before dispensing?",
+      "Must change be exact?"
+    ],
+    "functionalRequirements": [
+      "Accept credit",
+      "Select a stocked product",
+      "Reserve stock before dispensing",
+      "Return remaining credit on cancellation"
+    ],
+    "nonFunctionalRequirements": [
+      "Never dispense without enough credit",
+      "Never allow stock to become negative",
+      "Make a hardware failure visible for reconciliation"
+    ],
+    "outOfScope": [
+      "Multi-region active-active writes in the baseline",
+      "Unspecified payment, billing or social features beyond the stated requirements"
+    ],
+    "entities": ["Machine", "Slot", "Product", "Credit", "DispenseAttempt"],
+    "apiContracts": [
+      "insertCredit(amount) validates positive minor units",
+      "buy(slotId) returns a receipt or typed failure",
+      "cancel() returns outstanding credit"
+    ],
+    "dataModel": "Slot(id, productId, priceMinor, stock). MachineSession(id, creditMinor, state). DispenseAttempt(id, slotId, reservationId, hardwareOutcome). Store money as integer minor units.",
+    "mermaidDiagrams": [
+      "stateDiagram-v2\n [*] --> Accepting\n Accepting --> Selecting: credit inserted\n Selecting --> Dispensing: stock reserved\n Selecting --> Accepting: cancel\n Dispensing --> Accepting: confirmed outcome"
+    ],
+    "baselineDesign": "Use explicit states for accepting credit, awaiting selection and dispensing. The state controls which commands are legal, rather than spreading boolean checks through every method. On selection, validate credit and stock together, reserve the item, then request hardware dispense. A real device can time out after actually delivering the product, so do not blindly repeat a hardware action. Record a unique dispense attempt and reconcile ambiguous outcomes. The runnable skeleton below deliberately models only an atomic in-memory purchase. It does not pretend to control physical hardware or implement a payment network. A richer hardware adapter should return confirmed success, confirmed failure or unknown outcome.",
+    "tradeoffs": [
+      "An enum-driven state machine is simpler than one class per state for a small transition set",
+      "Reservation reduces overselling but requires expiry and reconciliation",
+      "Rejecting unsupported change is safer than silently retaining customer credit"
+    ],
+    "failureModes": [
+      "Power fails during dispense",
+      "A stock sensor disagrees with the inventory count",
+      "Payment succeeds but dispense confirmation is lost"
+    ],
+    "scalingOptions": [
+      "Keep hardware control local to each machine",
+      "Upload append-only reconciliation events to central operations"
+    ],
+    "capacityEstimation": "",
+    "javaSkeleton": "public class Main {\n    static final class Machine {\n        private int stock = 1;\n        private long credit;\n        synchronized void add(long amount) {\n            if (amount <= 0) throw new IllegalArgumentException();\n            credit = Math.addExact(credit, amount);\n        }\n        synchronized boolean buy(long price) {\n            if (price <= 0 || stock == 0 || credit < price) return false;\n            stock--; credit -= price; return true;\n        }\n    }\n    static void test() {\n        var m = new Machine(); m.add(100);\n        if (!m.buy(60)) throw new AssertionError();\n        if (m.buy(40)) throw new AssertionError();\n    }\n    public static void main(String[] args) { test(); System.out.println(\"PASS\"); }\n}\n",
+    "concurrencyConcerns": [
+      "Stock and credit change inside one lock",
+      "External hardware effects require attempt identity and reconciliation",
+      "Concurrent cancellations cannot refund credit already committed to a purchase"
+    ],
+    "testingStrategy": [
+      "Test exact price and insufficient credit",
+      "Test the last item purchased by two callers",
+      "Inject confirmed failure and ambiguous dispense outcomes"
+    ],
+    "followupQuestions": [
+      "Which single invariant would you protect first?",
+      "How does a retry differ from a new logical request?",
+      "What happens after a timeout with an unknown outcome?",
+      "Which metric reveals the next bottleneck?",
+      "How would you recover after a process or storage failure?",
+      "Which requirement would force a different partitioning strategy?"
+    ],
+    "evaluationRubric": "Score requirements, invariants, baseline correctness, failure recovery and tradeoff explanation from 1 to 5. A 1 names components without a coherent flow; a 3 provides a consistent baseline and handles the main failure path; a 5 ties concurrency, recovery, security and measured capacity to explicit requirements. These are self-assessment anchors, not company hiring cutoffs.",
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "parking-lot",
+    "kind": "LLD",
+    "title": "Parking allocation & tickets",
+    "level": "intermediate",
+    "prompt": "Design allocating a spot and issuing a ticket without assigning the same spot twice. Separate allocation, pricing and payment responsibilities.",
+    "clarifyingQuestions": [
+      "Which vehicle and spot types exist?",
+      "Are bookings made in advance?",
+      "How are lost tickets and payment failures handled?"
+    ],
+    "functionalRequirements": [
+      "Allocate a compatible free spot",
+      "Issue one active ticket",
+      "Calculate a fee at exit",
+      "Release the spot after an authorized exit"
+    ],
+    "nonFunctionalRequirements": [
+      "A spot has at most one active ticket",
+      "Use an injected clock for fee calculation",
+      "Keep billing rules independent of spot allocation"
+    ],
+    "outOfScope": [
+      "Multi-region active-active writes in the baseline",
+      "Unspecified payment, billing or social features beyond the stated requirements"
+    ],
+    "entities": ["Vehicle", "Spot", "Ticket", "AllocationPolicy", "PricingPolicy", "Payment"],
+    "apiContracts": [
+      "POST /entries accepts vehicle type and returns ticket",
+      "POST /tickets/{id}/quote computes fee",
+      "POST /tickets/{id}/exit verifies payment and releases allocation"
+    ],
+    "dataModel": "Spot(id, type, state). Ticket(id, spotId, vehicleId, enteredAt, closedAt). Payment(id, ticketId, status, providerReference). Unique active allocation protects each spot.",
+    "mermaidDiagrams": [
+      "flowchart LR\n EntryGate --> AllocationService\n AllocationService --> SpotRepository\n AllocationService --> TicketRepository\n ExitGate --> PaymentService\n ExitGate --> PricingPolicy"
+    ],
+    "baselineDesign": "An allocation repository owns the transition from free to occupied. A policy ranks eligible spots but cannot commit availability on its own. Ticket creation and allocation must form one atomic operation in persistent storage. Pricing uses entry and exit instants with a documented rounding rule; it should not rely on a mutable global current time. Payment and gate opening are external effects, so model them as explicit stages with idempotency. A failed gate command after successful payment should not charge again. The skeleton uses a synchronized set to illustrate allocation exclusivity; production tickets require persistent identifiers and recovery after restart.",
+    "tradeoffs": [
+      "Scanning all spots is easy but an indexed free-spot set improves allocation at scale",
+      "Pricing interfaces are useful when rules actually vary",
+      "Releasing a spot before exit confirmation improves capacity but can create an unsafe double allocation"
+    ],
+    "failureModes": [
+      "The payment provider times out",
+      "A gate fails after payment",
+      "Two gates allocate the last compatible spot"
+    ],
+    "scalingOptions": [
+      "Partition allocation by facility or zone",
+      "Retain a single authoritative allocation owner per spot"
+    ],
+    "capacityEstimation": "",
+    "javaSkeleton": "public class Main {\n    static final class Parking {\n        private final java.util.Set<String> free = new java.util.HashSet<>();\n        Parking() { free.add(\"A1\"); }\n        synchronized String allocate() {\n            if (free.isEmpty()) return null;\n            String spot = free.iterator().next(); free.remove(spot); return spot;\n        }\n        synchronized void release(String spot) {\n            if (!\"A1\".equals(spot) || !free.add(spot)) throw new IllegalStateException();\n        }\n    }\n    static void test() {\n        var p = new Parking();\n        if (!\"A1\".equals(p.allocate())) throw new AssertionError();\n        if (p.allocate() != null) throw new AssertionError();\n        p.release(\"A1\");\n        if (p.allocate() == null) throw new AssertionError();\n    }\n    public static void main(String[] args) { test(); System.out.println(\"PASS\"); }\n}\n",
+    "concurrencyConcerns": [
+      "Allocate and issue a ticket in one transaction",
+      "Use version checks for a ticket state transition",
+      "Never hold a database lock while waiting on a payment network"
+    ],
+    "testingStrategy": [
+      "Test full capacity and incompatible vehicles",
+      "Use a fake clock for fee boundaries",
+      "Test duplicated release and repeated exit commands"
+    ],
+    "followupQuestions": [
+      "Which single invariant would you protect first?",
+      "How does a retry differ from a new logical request?",
+      "What happens after a timeout with an unknown outcome?",
+      "Which metric reveals the next bottleneck?",
+      "How would you recover after a process or storage failure?",
+      "Which requirement would force a different partitioning strategy?"
+    ],
+    "evaluationRubric": "Score requirements, invariants, baseline correctness, failure recovery and tradeoff explanation from 1 to 5. A 1 names components without a coherent flow; a 3 provides a consistent baseline and handles the main failure path; a 5 ties concurrency, recovery, security and measured capacity to explicit requirements. These are self-assessment anchors, not company hiring cutoffs.",
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "lru-cache",
+    "kind": "LLD",
+    "title": "Bounded LRU cache",
+    "level": "intermediate",
+    "prompt": "Implement a fixed-capacity cache with least-recently-used eviction. Define whether reads change recency and how concurrent access is coordinated.",
+    "clarifyingQuestions": [
+      "Is capacity measured in entries or bytes?",
+      "Are null keys and values legal?",
+      "Do updates count as access?"
+    ],
+    "functionalRequirements": [
+      "Get a value and promote its recency",
+      "Insert or update a key",
+      "Evict the least recently used entry when capacity is exceeded"
+    ],
+    "nonFunctionalRequirements": [
+      "Capacity is positive and never exceeded after an operation",
+      "Recency updates and eviction are atomic",
+      "Cache misses are distinguishable from stored values"
+    ],
+    "outOfScope": [
+      "Multi-region active-active writes in the baseline",
+      "Unspecified payment, billing or social features beyond the stated requirements"
+    ],
+    "entities": ["Cache", "Entry", "RecencyOrder"],
+    "apiContracts": [
+      "get(key) returns Optional value",
+      "put(key,value) updates recency and evicts when needed"
+    ],
+    "dataModel": "A hash index maps keys to nodes. A doubly linked list orders nodes from most to least recent. A LinkedHashMap in access-order mode combines these structures for a compact Java implementation.",
+    "mermaidDiagrams": [
+      "flowchart LR\n Caller --> CacheLock\n CacheLock --> HashIndex\n HashIndex --> RecencyList\n RecencyList --> Eviction"
+    ],
+    "baselineDesign": "Use one authoritative ordering representation; maintaining both a separate timestamp map and a linked list invites inconsistency. In the Java skeleton, LinkedHashMap with accessOrder=true updates ordering on get, and removeEldestEntry enforces entry capacity after insertion. A synchronized boundary protects both reads and writes because reads mutate recency. This implementation is appropriate for a small in-process cache, not a distributed store. Adding TTL changes semantics: an expired key must not count as a valid hit, and a separate cleanup policy must prevent expired entries from consuming the whole capacity. Weight-based capacity requires tracking entry weights and deciding what to do with an entry larger than the entire limit.",
+    "tradeoffs": [
+      "One lock is easy to reason about but limits concurrent throughput",
+      "Sharding reduces contention but yields per-shard rather than global LRU",
+      "Entry-count capacity ignores differing value sizes"
+    ],
+    "failureModes": [
+      "A hot key is removed by an incorrect recency update",
+      "A caller mutates a cached value",
+      "A single oversized value dominates memory"
+    ],
+    "scalingOptions": [
+      "Shard only after measuring contention",
+      "Prefer immutable values",
+      "Track hit ratio and load latency rather than only cache size"
+    ],
+    "capacityEstimation": "",
+    "javaSkeleton": "public class Main {\n    static final class Lru<K,V> {\n        private final java.util.LinkedHashMap<K,V> map;\n        Lru(int capacity) {\n            if (capacity <= 0) throw new IllegalArgumentException();\n            map = new java.util.LinkedHashMap<>(16, 0.75f, true) {\n                protected boolean removeEldestEntry(java.util.Map.Entry<K,V> entry) {\n                    return size() > capacity;\n                }\n            };\n        }\n        synchronized V get(K key) { return map.get(key); }\n        synchronized void put(K key, V value) { map.put(key, value); }\n    }\n    static void test() {\n        var c = new Lru<String,Integer>(2);\n        c.put(\"a\",1); c.put(\"b\",2); c.get(\"a\"); c.put(\"c\",3);\n        if (c.get(\"b\") != null || c.get(\"a\") != 1) throw new AssertionError();\n    }\n    public static void main(String[] args) { test(); System.out.println(\"PASS\"); }\n}\n",
+    "concurrencyConcerns": [
+      "Access-order get is a write to the recency structure",
+      "Protect the map and list with the same synchronization protocol",
+      "A concurrent map alone cannot protect a separate eviction list"
+    ],
+    "testingStrategy": [
+      "Test recency on reads and overwrites",
+      "Test capacity one and invalid capacity",
+      "Compare randomized operation sequences with a simple reference model"
+    ],
+    "followupQuestions": [
+      "Which single invariant would you protect first?",
+      "How does a retry differ from a new logical request?",
+      "What happens after a timeout with an unknown outcome?",
+      "Which metric reveals the next bottleneck?",
+      "How would you recover after a process or storage failure?",
+      "Which requirement would force a different partitioning strategy?"
+    ],
+    "evaluationRubric": "Score requirements, invariants, baseline correctness, failure recovery and tradeoff explanation from 1 to 5. A 1 names components without a coherent flow; a 3 provides a consistent baseline and handles the main failure path; a 5 ties concurrency, recovery, security and measured capacity to explicit requirements. These are self-assessment anchors, not company hiring cutoffs.",
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "token-bucket",
+    "kind": "LLD",
+    "title": "Token-bucket rate limiter",
+    "level": "intermediate",
+    "prompt": "Design a deterministic token bucket with explicit burst capacity and refill rate. Keep time injectable so boundary tests do not need real sleeps.",
+    "clarifyingQuestions": [
+      "What is the burst allowance?",
+      "Is the limit per identity or global?",
+      "What happens when limiter storage is unavailable?"
+    ],
+    "functionalRequirements": [
+      "Refill according to elapsed time",
+      "Consume one token when available",
+      "Reject without consuming when empty"
+    ],
+    "nonFunctionalRequirements": [
+      "Tokens stay between zero and capacity",
+      "Refill and consumption are one atomic operation",
+      "Elapsed time cannot move the refill clock backward"
+    ],
+    "outOfScope": [
+      "Multi-region active-active writes in the baseline",
+      "Unspecified payment, billing or social features beyond the stated requirements"
+    ],
+    "entities": ["Bucket", "Clock", "RatePolicy", "Identity"],
+    "apiContracts": [
+      "allow(nowNanos) returns an allow or reject decision",
+      "A service adapter maps rejection to HTTP 429 and a documented retry hint"
+    ],
+    "dataModel": "Bucket(capacity, refillPerSecond, tokens, lastRefillNanos). Use one monotonic time domain within a process. Shared storage needs its own authoritative timing policy.",
+    "mermaidDiagrams": [
+      "flowchart LR\n Request --> IdentityKey\n IdentityKey --> BucketLock\n BucketLock --> Refill\n Refill --> Consume\n Consume --> Decision"
+    ],
+    "baselineDesign": "At each request, compute elapsed duration since the previous refill and add elapsed times refillRate, capped by capacity. Update the refill timestamp, then consume a token if at least one exists. The lock protects the entire calculation. An injected monotonic timestamp makes tests precise and avoids wall-clock adjustments. The single-process model below intentionally rejects time regression. A real multi-instance limiter cannot simply keep one bucket in every instance while claiming a global limit: it needs shared atomic state, a partitioned authority or an explicitly approximate policy. Protect the identity map against unbounded growth with expiry and bounded key cardinality.",
+    "tradeoffs": [
+      "Token buckets allow explicit bursts while smoothing average rate",
+      "Floating-point tokens are simple but integer fixed-point accounting gives tighter precision control",
+      "Global coordination improves accuracy but increases latency and failure coupling"
+    ],
+    "failureModes": [
+      "Time regresses or comes from inconsistent sources",
+      "Limiter keys grow without bound",
+      "Shared storage is unavailable during an attack"
+    ],
+    "scalingOptions": [
+      "Assign each key to one authoritative partition",
+      "Expire inactive keys",
+      "Measure rejection rate and backend saturation together"
+    ],
+    "capacityEstimation": "",
+    "javaSkeleton": "public class Main {\n    static final class Bucket {\n        final double capacity, rate; double tokens; long last;\n        Bucket(int capacity, double rate, long now) {\n            if (capacity <= 0 || rate <= 0) throw new IllegalArgumentException();\n            this.capacity=capacity; this.rate=rate; tokens=capacity; last=now;\n        }\n        synchronized boolean allow(long now) {\n            if (now < last) throw new IllegalArgumentException(\"time regression\");\n            tokens=Math.min(capacity,tokens+(now-last)/1_000_000_000.0*rate);\n            last=now;\n            if (tokens < 1) return false;\n            tokens--; return true;\n        }\n    }\n    static void test() {\n        var b = new Bucket(1, 1, 0);\n        if (!b.allow(0) || b.allow(0) || !b.allow(1_000_000_000L)) throw new AssertionError();\n    }\n    public static void main(String[] args) { test(); System.out.println(\"PASS\"); }\n}\n",
+    "concurrencyConcerns": [
+      "Refill and consume under the same lock",
+      "Do not combine timestamps from different machines",
+      "A distributed check-and-update needs an atomic storage operation"
+    ],
+    "testingStrategy": [
+      "Test initial burst and exact refill boundary",
+      "Test a long idle period caps at capacity",
+      "Test simultaneous callers and regressing time"
+    ],
+    "followupQuestions": [
+      "Which single invariant would you protect first?",
+      "How does a retry differ from a new logical request?",
+      "What happens after a timeout with an unknown outcome?",
+      "Which metric reveals the next bottleneck?",
+      "How would you recover after a process or storage failure?",
+      "Which requirement would force a different partitioning strategy?"
+    ],
+    "evaluationRubric": "Score requirements, invariants, baseline correctness, failure recovery and tradeoff explanation from 1 to 5. A 1 names components without a coherent flow; a 3 provides a consistent baseline and handles the main failure path; a 5 ties concurrency, recovery, security and measured capacity to explicit requirements. These are self-assessment anchors, not company hiring cutoffs.",
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "url-shortener",
+    "kind": "HLD",
+    "title": "URL shortener",
+    "level": "intermediate",
+    "prompt": "Design creating short links and redirecting users. Focus on key uniqueness, read latency, abuse handling and durability.",
+    "clarifyingQuestions": [
+      "Are custom aliases supported?",
+      "Can links expire or be edited?",
+      "What traffic and geographic reach should be assumed?"
+    ],
+    "functionalRequirements": [
+      "Create a short URL",
+      "Redirect a valid key",
+      "Expire or disable abusive links",
+      "Report link-not-found separately from temporary storage failure"
+    ],
+    "nonFunctionalRequirements": [
+      "Redirect p95 target 100 ms within the serving region, an interview assumption",
+      "Committed links survive process restart",
+      "Enforce rate limits and destination validation"
+    ],
+    "outOfScope": [
+      "Multi-region active-active writes in the baseline",
+      "Unspecified payment, billing or social features beyond the stated requirements"
+    ],
+    "entities": ["Link", "Owner", "Alias", "AbuseReport"],
+    "apiContracts": [
+      "POST /links accepts destination and optional alias with idempotency key",
+      "GET /{key} returns 302 with Location",
+      "DELETE /links/{id} requires ownership"
+    ],
+    "dataModel": "Link(key primary key, destination, ownerId, createdAt, expiresAt, state). Index ownerId and creation time for management. A unique key constraint is the collision authority.",
+    "mermaidDiagrams": [
+      "flowchart LR\n Client --> Edge\n Edge --> RedirectAPI\n RedirectAPI --> Cache\n RedirectAPI --> LinkDB\n RedirectAPI --> EventQueue\n EventQueue --> Analytics"
+    ],
+    "baselineDesign": "Start with a stateless API, a durable relational key-value-shaped table and an optional cache on the redirect path. Generate a random opaque key and retry collisions through a unique insert. The redirect reads the key, verifies active state and expiry, then returns a nonpermanent redirect when edits or abuse takedowns must propagate. The application must not fetch arbitrary destinations merely to redirect: server-side preview fetching introduces SSRF risk and requires a separate restricted fetcher. Cache popular links with a TTL matching the takedown requirement. Negative caching needs a short lifetime so newly created links do not remain invisible. Track aggregate redirect metrics asynchronously rather than making analytics writes part of every redirect transaction.",
+    "tradeoffs": [
+      "Random keys distribute writes but need collision detection",
+      "Sequential identifiers simplify allocation but reveal activity and need an encoding strategy",
+      "Aggressive CDN caching improves latency but delays revocation"
+    ],
+    "failureModes": [
+      "A generated alias collides",
+      "Cache contains a disabled destination",
+      "The analytics pipeline is unavailable while redirects remain healthy"
+    ],
+    "scalingOptions": [
+      "Add read replicas only with an explicit freshness policy",
+      "Partition by key hash when one database no longer serves measured load",
+      "Use CDN caching selectively for immutable links"
+    ],
+    "capacityEstimation": "Illustrative assumptions, not measured demand: 1 million operations per day is approximately 11.6 requests per second on average. At a 20× peak, budget for roughly 232 requests per second. At 1 KB metadata per operation, raw metadata grows about 1 GB per day before indexes and replicas. For this system, refine read/write ratio, retention, payload size and hot-key distribution before choosing infrastructure. Object bytes and chat bodies can dominate metadata; notification provider throughput and checkout inventory contention can dominate request count.",
+    "javaSkeleton": "",
+    "concurrencyConcerns": [
+      "Unique inserts resolve concurrent key creation",
+      "Cache invalidation races with redirect reads",
+      "Idempotency prevents duplicate creates after a timeout"
+    ],
+    "testingStrategy": [
+      "Test collision retries with controlled key generation",
+      "Test expiry and revocation while cached",
+      "Load test a hot key and a cold-cache restart"
+    ],
+    "followupQuestions": [
+      "Which single invariant would you protect first?",
+      "How does a retry differ from a new logical request?",
+      "What happens after a timeout with an unknown outcome?",
+      "Which metric reveals the next bottleneck?",
+      "How would you recover after a process or storage failure?",
+      "Which requirement would force a different partitioning strategy?"
+    ],
+    "evaluationRubric": "Score requirements, invariants, baseline correctness, failure recovery and tradeoff explanation from 1 to 5. A 1 names components without a coherent flow; a 3 provides a consistent baseline and handles the main failure path; a 5 ties concurrency, recovery, security and measured capacity to explicit requirements. These are self-assessment anchors, not company hiring cutoffs.",
+    "references": ["https://www.postgresql.org/docs/current/transaction-iso.html"],
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "notification-system",
+    "kind": "HLD",
+    "title": "Reliable notification delivery",
+    "level": "intermediate",
+    "prompt": "Design email and push notifications with preferences, retries and observable delivery status. Distinguish accepted work from confirmed provider delivery.",
+    "clarifyingQuestions": [
+      "Which channels and priorities are needed?",
+      "Is ordering required per user?",
+      "What is the duplicate-delivery tolerance?"
+    ],
+    "functionalRequirements": [
+      "Accept a notification request",
+      "Apply channel preferences",
+      "Queue delivery",
+      "Retry transient failures",
+      "Expose a delivery audit trail"
+    ],
+    "nonFunctionalRequirements": [
+      "Accepted work is durable",
+      "Bound retries and provider concurrency",
+      "Isolate channel outages",
+      "Protect message contents and recipient data"
+    ],
+    "outOfScope": [
+      "Multi-region active-active writes in the baseline",
+      "Unspecified payment, billing or social features beyond the stated requirements"
+    ],
+    "entities": ["Notification", "DeliveryAttempt", "Preference", "TemplateVersion"],
+    "apiContracts": [
+      "POST /notifications accepts an idempotency key and returns 202 with notificationId",
+      "GET /notifications/{id} returns accepted queued sent or failed state",
+      "Provider webhooks update delivery outcomes"
+    ],
+    "dataModel": "Notification(id, ownerId, templateVersion, payloadRef, state). DeliveryAttempt(id, notificationId, channel, providerRef, nextAttemptAt, result). Unique deduplication key scopes a logical send.",
+    "mermaidDiagrams": [
+      "flowchart LR\n API --> Database\n Database --> OutboxRelay\n OutboxRelay --> Queue\n Queue --> ChannelWorkers\n ChannelWorkers --> Provider\n Provider --> WebhookAPI\n ChannelWorkers --> DeadLetterQueue"
+    ],
+    "baselineDesign": "Commit notification acceptance and an outbox event in the same transaction. An outbox relay places work on a durable queue. Channel-specific workers apply current suppression preferences, render a versioned template and call providers with bounded concurrency. A successful provider API response usually means accepted, not delivered; webhooks or provider receipts refine the status. Delivery is at least once unless the provider offers a suitable idempotency contract. Keep a stable logical delivery ID across retries and reconcile unknown outcomes before blindly resending. Use a dead-letter queue after a bounded retry budget, and provide controlled replay rather than silently discarding failures. Separate high-priority security messages from bulk campaigns to avoid queue starvation.",
+    "tradeoffs": [
+      "One queue is simpler but mixes failure domains and priorities",
+      "At-least-once delivery is practical but can duplicate user-visible messages",
+      "Template versioning uses more metadata but makes replay reproducible"
+    ],
+    "failureModes": [
+      "A provider times out after accepting a send",
+      "A webhook arrives twice or out of order",
+      "Bulk traffic starves urgent notifications"
+    ],
+    "scalingOptions": [
+      "Partition by recipient when per-user ordering is required",
+      "Autoscale on queue age as well as depth",
+      "Use separate channel and priority budgets"
+    ],
+    "capacityEstimation": "Illustrative assumptions, not measured demand: 1 million operations per day is approximately 11.6 requests per second on average. At a 20× peak, budget for roughly 232 requests per second. At 1 KB metadata per operation, raw metadata grows about 1 GB per day before indexes and replicas. For this system, refine read/write ratio, retention, payload size and hot-key distribution before choosing infrastructure. Object bytes and chat bodies can dominate metadata; notification provider throughput and checkout inventory contention can dominate request count.",
+    "javaSkeleton": "",
+    "concurrencyConcerns": [
+      "Claim outbox rows safely across relays",
+      "Make webhook processing idempotent",
+      "Serialize preference-sensitive decisions when strict suppression is required"
+    ],
+    "testingStrategy": [
+      "Test provider accepted-but-timeout behavior",
+      "Replay duplicated and reordered webhooks",
+      "Simulate one channel outage without blocking other channels"
+    ],
+    "followupQuestions": [
+      "Which single invariant would you protect first?",
+      "How does a retry differ from a new logical request?",
+      "What happens after a timeout with an unknown outcome?",
+      "Which metric reveals the next bottleneck?",
+      "How would you recover after a process or storage failure?",
+      "Which requirement would force a different partitioning strategy?"
+    ],
+    "evaluationRubric": "Score requirements, invariants, baseline correctness, failure recovery and tradeoff explanation from 1 to 5. A 1 names components without a coherent flow; a 3 provides a consistent baseline and handles the main failure path; a 5 ties concurrency, recovery, security and measured capacity to explicit requirements. These are self-assessment anchors, not company hiring cutoffs.",
+    "references": ["https://www.postgresql.org/docs/current/transaction-iso.html"],
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "object-upload",
+    "kind": "HLD",
+    "title": "Secure file upload pipeline",
+    "level": "intermediate",
+    "prompt": "Design large file uploads with validation and controlled publication. Keep byte transfer away from the application server where practical.",
+    "clarifyingQuestions": [
+      "What file sizes and formats are accepted?",
+      "Do uploads need antivirus scanning?",
+      "Are files public or owner-private?"
+    ],
+    "functionalRequirements": [
+      "Create an upload intent",
+      "Issue a short-lived scoped upload URL",
+      "Verify completion",
+      "Validate content",
+      "Publish only approved files"
+    ],
+    "nonFunctionalRequirements": [
+      "Enforce owner and object scope",
+      "Keep incomplete files out of the download namespace",
+      "Support resumable upload for large objects",
+      "Bound storage and validation cost"
+    ],
+    "outOfScope": [
+      "Multi-region active-active writes in the baseline",
+      "Unspecified payment, billing or social features beyond the stated requirements"
+    ],
+    "entities": ["UploadIntent", "ObjectVersion", "ValidationJob", "OwnerQuota"],
+    "apiContracts": [
+      "POST /uploads declares size content type and checksum",
+      "POST /uploads/{id}/complete verifies the stored object",
+      "GET /files/{id}/download authorizes and returns a short-lived read URL"
+    ],
+    "dataModel": "UploadIntent(id, ownerId, objectKey, expectedSize, checksum, expiresAt, state). ObjectVersion(id, intentId, storageVersion, validatedAt, policyVersion). Use immutable storage keys per version.",
+    "mermaidDiagrams": [
+      "flowchart LR\n Client --> UploadAPI\n UploadAPI --> MetadataDB\n UploadAPI --> SignedURL\n Client --> QuarantineStorage\n QuarantineStorage --> ValidationQueue\n ValidationQueue --> Scanner\n Scanner --> MetadataDB\n DownloadAPI --> ApprovedObjects"
+    ],
+    "baselineDesign": "The API authorizes an upload intent and assigns an unpredictable object key in a quarantine prefix. A scoped signed URL allows the client to upload directly to object storage. Completion is not proof of safety: verify actual size and checksum from storage and enqueue content inspection. A worker validates format using content rather than trusting filename or MIME metadata. Only then transition metadata to published and permit an authorized read URL. Download authorization must check metadata state every time a read capability is issued. Multipart uploads need expiry cleanup so abandoned parts do not accumulate costs. Keep validation jobs idempotent and bind them to an immutable object version to avoid a time-of-check/time-of-use overwrite.",
+    "tradeoffs": [
+      "Direct uploads reduce API bandwidth but require careful signed-capability scope",
+      "Synchronous validation is simple for tiny files but unsuitable for large scans",
+      "Immutable object versions add metadata but prevent validation races"
+    ],
+    "failureModes": [
+      "The client uploads a different size than declared",
+      "An object is overwritten after scanning",
+      "A validation worker crashes after approving but before acknowledging the queue"
+    ],
+    "scalingOptions": [
+      "Scale validation workers by file type and CPU cost",
+      "Use lifecycle cleanup for abandoned intents",
+      "Serve downloads through a CDN only with a matching access policy"
+    ],
+    "capacityEstimation": "Illustrative assumptions, not measured demand: 1 million operations per day is approximately 11.6 requests per second on average. At a 20× peak, budget for roughly 232 requests per second. At 1 KB metadata per operation, raw metadata grows about 1 GB per day before indexes and replicas. For this system, refine read/write ratio, retention, payload size and hot-key distribution before choosing infrastructure. Object bytes and chat bodies can dominate metadata; notification provider throughput and checkout inventory contention can dominate request count.",
+    "javaSkeleton": "",
+    "concurrencyConcerns": [
+      "Complete callbacks may race with storage events",
+      "Bind validation to object versions",
+      "Quota reservation and intent creation must be atomic"
+    ],
+    "testingStrategy": [
+      "Test cross-owner upload and download attempts",
+      "Test MIME spoofing and oversized files",
+      "Replay completion events and verify one publication transition"
+    ],
+    "followupQuestions": [
+      "Which single invariant would you protect first?",
+      "How does a retry differ from a new logical request?",
+      "What happens after a timeout with an unknown outcome?",
+      "Which metric reveals the next bottleneck?",
+      "How would you recover after a process or storage failure?",
+      "Which requirement would force a different partitioning strategy?"
+    ],
+    "evaluationRubric": "Score requirements, invariants, baseline correctness, failure recovery and tradeoff explanation from 1 to 5. A 1 names components without a coherent flow; a 3 provides a consistent baseline and handles the main failure path; a 5 ties concurrency, recovery, security and measured capacity to explicit requirements. These are self-assessment anchors, not company hiring cutoffs.",
+    "references": ["https://www.postgresql.org/docs/current/transaction-iso.html"],
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "chat-messaging",
+    "kind": "HLD",
+    "title": "Durable one-to-one chat",
+    "level": "intermediate",
+    "prompt": "Design a direct messaging service that distinguishes durable acceptance, online delivery and client acknowledgement.",
+    "clarifyingQuestions": [
+      "Is group chat in scope?",
+      "Must messages be ordered per conversation?",
+      "How long is history retained and on how many devices?"
+    ],
+    "functionalRequirements": [
+      "Send a message with a client-generated idempotency key",
+      "Store conversation history",
+      "Deliver to online devices",
+      "Resume from a cursor after reconnect"
+    ],
+    "nonFunctionalRequirements": [
+      "Messages acknowledged as accepted are durable",
+      "Enforce conversation membership",
+      "Bound per-connection buffers",
+      "Define an ordering authority per conversation"
+    ],
+    "outOfScope": [
+      "Multi-region active-active writes in the baseline",
+      "Unspecified payment, billing or social features beyond the stated requirements"
+    ],
+    "entities": ["Conversation", "Membership", "Message", "DeviceCursor", "Connection"],
+    "apiContracts": [
+      "POST /conversations/{id}/messages returns server sequence and messageId",
+      "GET /conversations/{id}/messages?after=sequence returns history",
+      "WebSocket frames carry new messages and acknowledgement cursors"
+    ],
+    "dataModel": "Message(conversationId, sequence, messageId, senderId, clientKey, bodyRef, createdAt). Unique conversation sequence and sender clientKey. DeviceCursor(userId, deviceId, conversationId, acknowledgedSequence).",
+    "mermaidDiagrams": [
+      "flowchart LR\n Sender --> MessageAPI\n MessageAPI --> MessageDB\n MessageDB --> Outbox\n Outbox --> DeliveryBus\n DeliveryBus --> SocketGateway\n SocketGateway --> Recipient\n Recipient --> HistoryAPI\n HistoryAPI --> MessageDB"
+    ],
+    "baselineDesign": "Store the message before returning durable acceptance. Assign an authoritative monotonically increasing sequence within each conversation, then publish a delivery event through an outbox. A connection service maps active devices to sockets and pushes notifications, but it is not the source of message history. Reconnecting clients query durable history after their last cursor, deduplicating by message ID. Slow devices must not hold an unbounded memory queue; disconnect or signal resynchronization when the buffer budget is exceeded. Presence is approximate and may be stale. Read receipts are separate events with privacy and ordering semantics, not proof that a human understood a message. Partitioning by conversation keeps local ordering manageable but requires a policy for very hot conversations.",
+    "tradeoffs": [
+      "A per-conversation sequence simplifies replay but needs a clear writer authority",
+      "WebSockets improve immediacy but durable polling remains necessary for recovery",
+      "Exactly-once UI display is achieved by client deduplication rather than exactly-once network delivery"
+    ],
+    "failureModes": [
+      "A socket disconnects after storage commit",
+      "A delivery event is duplicated",
+      "A device acknowledges a cursor before persisting the displayed message"
+    ],
+    "scalingOptions": [
+      "Partition conversation storage and event routing by conversation ID",
+      "Separate socket fleets from durable write services",
+      "Apply backpressure and message-size caps"
+    ],
+    "capacityEstimation": "Illustrative assumptions, not measured demand: 1 million operations per day is approximately 11.6 requests per second on average. At a 20× peak, budget for roughly 232 requests per second. At 1 KB metadata per operation, raw metadata grows about 1 GB per day before indexes and replicas. For this system, refine read/write ratio, retention, payload size and hot-key distribution before choosing infrastructure. Object bytes and chat bodies can dominate metadata; notification provider throughput and checkout inventory contention can dominate request count.",
+    "javaSkeleton": "",
+    "concurrencyConcerns": [
+      "Concurrent sends need one sequence authority per conversation",
+      "Membership checks and writes require a defined revocation policy",
+      "Client retries must reuse the same client key"
+    ],
+    "testingStrategy": [
+      "Disconnect after commit and before acknowledgement",
+      "Replay events out of order and verify sequence-based recovery",
+      "Test revoked membership and slow-client backpressure"
+    ],
+    "followupQuestions": [
+      "Which single invariant would you protect first?",
+      "How does a retry differ from a new logical request?",
+      "What happens after a timeout with an unknown outcome?",
+      "Which metric reveals the next bottleneck?",
+      "How would you recover after a process or storage failure?",
+      "Which requirement would force a different partitioning strategy?"
+    ],
+    "evaluationRubric": "Score requirements, invariants, baseline correctness, failure recovery and tradeoff explanation from 1 to 5. A 1 names components without a coherent flow; a 3 provides a consistent baseline and handles the main failure path; a 5 ties concurrency, recovery, security and measured capacity to explicit requirements. These are self-assessment anchors, not company hiring cutoffs.",
+    "references": ["https://www.postgresql.org/docs/current/transaction-iso.html"],
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "checkout",
+    "kind": "HLD",
+    "title": "Checkout, inventory & payment",
+    "level": "intermediate",
+    "prompt": "Design order checkout that avoids overselling and duplicate charges while handling ambiguous provider responses.",
+    "clarifyingQuestions": [
+      "Are carts reserved before payment?",
+      "Which inventory consistency guarantees are required?",
+      "Is a payment authorization separate from capture?"
+    ],
+    "functionalRequirements": [
+      "Validate a priced cart snapshot",
+      "Reserve inventory",
+      "Create a payment intent",
+      "Confirm payment outcome",
+      "Confirm or cancel the order"
+    ],
+    "nonFunctionalRequirements": [
+      "Never treat a frontend price as authoritative",
+      "Deduplicate checkout and payment operations",
+      "Preserve an auditable order state",
+      "Release expired reservations safely"
+    ],
+    "outOfScope": [
+      "Multi-region active-active writes in the baseline",
+      "Unspecified payment, billing or social features beyond the stated requirements"
+    ],
+    "entities": ["Order", "OrderLine", "Reservation", "PaymentIntent", "LedgerEntry"],
+    "apiContracts": [
+      "POST /checkouts accepts cart reference and idempotency key",
+      "GET /orders/{id} returns authoritative state",
+      "POST /payment-webhooks verifies provider signature and records outcome"
+    ],
+    "dataModel": "Order(id, ownerId, currency, totalMinor, state, version). OrderLine(orderId, sku, quantity, priceMinor). Reservation(id, sku, quantity, expiresAt, state). PaymentIntent(id, orderId, providerReference, state).",
+    "mermaidDiagrams": [
+      "flowchart LR\n Client --> CheckoutAPI\n CheckoutAPI --> OrderDB\n CheckoutAPI --> InventoryAuthority\n CheckoutAPI --> PaymentProvider\n PaymentProvider --> VerifiedWebhook\n VerifiedWebhook --> OrderStateMachine\n OrderStateMachine --> Outbox\n Outbox --> Fulfillment"
+    ],
+    "baselineDesign": "Create an immutable priced order snapshot on the server using current catalog rules. Reserve inventory with a conditional decrement or a reservation ledger under a transaction. Record the payment intent before contacting the provider, then use the provider's idempotency contract. A timeout leaves an unknown outcome, not a safe-to-retry-new-charge outcome. Verified webhooks and reconciliation queries drive idempotent state transitions. Confirm the order only when the required payment state is established. A saga coordinates reservation expiry and payment compensation because a database transaction cannot span an external provider. Keep an audit trail of transitions and make operators able to reconcile stuck states without manually rewriting balances.",
+    "tradeoffs": [
+      "Holding stock during payment reduces overselling but temporarily lowers availability",
+      "Authorization then capture can reduce refunds but depends on provider capability",
+      "Strong consistency for stock may increase latency during a hot sale"
+    ],
+    "failureModes": [
+      "Payment succeeds after reservation expiry",
+      "A webhook is duplicated or delayed",
+      "A reservation release races with order confirmation"
+    ],
+    "scalingOptions": [
+      "Partition inventory authority by SKU",
+      "Serialize hot-SKU reservation updates",
+      "Queue noncritical notifications and analytics outside checkout"
+    ],
+    "capacityEstimation": "Illustrative assumptions, not measured demand: 1 million operations per day is approximately 11.6 requests per second on average. At a 20× peak, budget for roughly 232 requests per second. At 1 KB metadata per operation, raw metadata grows about 1 GB per day before indexes and replicas. For this system, refine read/write ratio, retention, payload size and hot-key distribution before choosing infrastructure. Object bytes and chat bodies can dominate metadata; notification provider throughput and checkout inventory contention can dominate request count.",
+    "javaSkeleton": "",
+    "concurrencyConcerns": [
+      "Use version checks on order transitions",
+      "Reservation expiry must compare current state and ownership",
+      "Payment and inventory retries must carry stable logical operation IDs"
+    ],
+    "testingStrategy": [
+      "Simulate provider timeout after successful authorization",
+      "Race reservation expiry with payment confirmation",
+      "Replay webhooks and verify no duplicate fulfillment"
+    ],
+    "followupQuestions": [
+      "Which single invariant would you protect first?",
+      "How does a retry differ from a new logical request?",
+      "What happens after a timeout with an unknown outcome?",
+      "Which metric reveals the next bottleneck?",
+      "How would you recover after a process or storage failure?",
+      "Which requirement would force a different partitioning strategy?"
+    ],
+    "evaluationRubric": "Score requirements, invariants, baseline correctness, failure recovery and tradeoff explanation from 1 to 5. A 1 names components without a coherent flow; a 3 provides a consistent baseline and handles the main failure path; a 5 ties concurrency, recovery, security and measured capacity to explicit requirements. These are self-assessment anchors, not company hiring cutoffs.",
+    "references": ["https://www.postgresql.org/docs/current/transaction-iso.html"],
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  }
+]

@@ -1,0 +1,579 @@
+[
+  {
+    "id": "arrays-hashing",
+    "slug": "arrays-hashing",
+    "title": "Arrays & hashing",
+    "category": "DSA",
+    "level": "beginner",
+    "prerequisiteSlugs": [],
+    "recognitionClues": [
+      "Repeated membership tests",
+      "frequency counting",
+      "grouping by a canonical representation"
+    ],
+    "coreIdea": "A hash table trades additional memory for direct access to information about values already processed. The important design decision is the meaning of a key and its associated value. In a two-sum scan, the key is a number and the value is its earlier index. In an anagram grouping task, the key is a canonical representation of character counts. The container itself does not solve the problem; the representation does.",
+    "explanationMd": "## Start with the state\n\nA hash table trades additional memory for direct access to information about values already processed. The important design decision is the meaning of a key and its associated value. In a two-sum scan, the key is a number and the value is its earlier index. In an anagram grouping task, the key is a canonical representation of character counts. The container itself does not solve the problem; the representation does.\n\n## Derive correctness\n\nFor the original exercise below, return whether any integer appears twice. Before processing index i, the set contains exactly the values at indices smaller than i. If adding the current value fails, a prior occurrence exists. Otherwise the invariant extends to the next index. This is a proof by induction over the processed prefix, and it makes the empty input case immediate.\n\n## Choose the right variation\n\nIf values occupy a small fixed range, a frequency array may use less memory and avoid boxing. If the input is already sorted, adjacent comparisons solve duplicate detection with constant extra space. For user-defined keys, equality and hashing must agree: equal keys need equal hash codes. Iteration order is a separate property and must never be inferred from HashMap. For anagrams, a delimiter-separated count vector avoids ambiguous concatenations.\n\n## Work through a counterexample\n\nBefore coding, choose an empty or minimal valid input, an input containing repeated values, and an input where the answer is at a boundary. State your expected result before running the program. Then draw the state after each transition. If your invariant does not explain the transition, stop and refine it rather than adding a special case. A counterexample is useful evidence about a missing assumption, not an invitation to patch one input.\n\n## Practice deliberately\n\nBegin with the foundational linked exercise and write a brute-force solution in your own words. Identify the repeated work that this pattern removes. Implement the Java template without looking, then explain why it terminates and why it preserves the invariant. Record whether you needed a hint; a correct answer after reading a solution is learning completion, not independent retrieval. On tomorrow's review, start from the problem constraints and recover the reasoning before recalling code.\n\n## Explain it in an interview\n\nPresent the input assumptions first, describe the meaning of your state, and justify one transition. Separate preprocessing cost from the main loop. Count memory retained by containers and recursive calls as well as the returned result. If a follow-up changes ordering, duplicate handling or allowed mutation, check whether your proof still holds. Test the smallest failing example aloud so an interviewer can see how you validate a design rather than merely recognize a familiar template.",
+    "invariants": [
+      "For the original exercise below, return whether any integer appears twice. Before processing index i, the set contains exactly the values at indices smaller than i. If adding the current value fails, a prior occurrence exists. Otherwise the invariant extends to the next index. This is a proof by induction over the processed prefix, and it makes the empty input case immediate."
+    ],
+    "whenNotToUse": ["When the required ordering, monotonicity, or state assumptions do not hold."],
+    "javaTemplate": "static boolean hasDuplicate(int[] values) {\n    java.util.Set<Integer> seen = new java.util.HashSet<>();\n    for (int value : values) {\n        if (!seen.add(value)) return true;\n    }\n    return false;\n}",
+    "workedExample": "[4, 7, 4] → insert 4, insert 7, detect that 4 is already present → true.",
+    "dryRunSteps": ["[4, 7, 4]", "insert 4, insert 7, detect that 4 is already present", "true."],
+    "timeComplexity": "Expected O(n), with hash distribution assumptions",
+    "spaceComplexity": "O(n)",
+    "commonMistakes": [
+      "Mutable keys can become unreachable after insertion",
+      "Integer overflow when computing complements",
+      "Confusing a count map with an index map"
+    ],
+    "variants": [
+      "If values occupy a small fixed range, a frequency array may use less memory and avoid boxing. If the input is already sorted, adjacent comparisons solve duplicate detection with constant extra space. For user-defined keys, equality and hashing must agree: equal keys need equal hash codes. Iteration order is a separate property and must never be inferred from HashMap. For anagrams, a delimiter-separated count vector avoids ambiguous concatenations."
+    ],
+    "practiceProblemIds": [
+      "lc-1",
+      "lc-217",
+      "lc-242",
+      "lc-49",
+      "lc-347",
+      "lc-238",
+      "lc-128",
+      "lc-36",
+      "lc-169",
+      "lc-560"
+    ],
+    "interviewFollowups": [
+      "Prove the state invariant.",
+      "What changes if duplicate values are allowed?",
+      "How would you test boundary conditions?"
+    ],
+    "sourceLinks": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/package-summary.html"
+    ],
+    "estimatedMinutes": 35,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "id": "two-pointers",
+    "slug": "two-pointers",
+    "title": "Two pointers",
+    "category": "DSA",
+    "level": "beginner",
+    "prerequisiteSlugs": ["arrays-hashing"],
+    "recognitionClues": ["Sorted pair search", "palindromes", "stable in-place compaction"],
+    "coreIdea": "Two pointers describe a search space that shrinks or a processed region that grows. The pointers are not a trick for replacing a nested loop mechanically. You need a reason why each movement safely discards candidates. On a sorted array, moving the smaller end inward increases a candidate pair sum; moving the larger end inward decreases it. Sorting supplies the monotonic property that makes those exclusions valid.",
+    "explanationMd": "## Start with the state\n\nTwo pointers describe a search space that shrinks or a processed region that grows. The pointers are not a trick for replacing a nested loop mechanically. You need a reason why each movement safely discards candidates. On a sorted array, moving the smaller end inward increases a candidate pair sum; moving the larger end inward decreases it. Sorting supplies the monotonic property that makes those exclusions valid.\n\n## Derive correctness\n\nThe example tests whether a sorted array contains a target pair. Before each iteration, any not-yet-eliminated solution lies between left and right. If the current sum is too small, pairing the current left value with any smaller right value cannot reach the target. Therefore that entire row of candidates can be removed by advancing left. The symmetric argument justifies decrementing right when the sum is too large.\n\n## Choose the right variation\n\nSame-direction pointers solve a different problem: a read pointer explores input while a write pointer maintains an accepted prefix. For removing duplicates, the prefix before write contains exactly the unique values already encountered. For partitioning, define whether order must be preserved before choosing swaps. Two pointers are unsuitable for arbitrary unsorted pair sums unless you first sort or choose hashing. Explain whether sorting cost and storage are included in your complexity claim.\n\n## Work through a counterexample\n\nBefore coding, choose an empty or minimal valid input, an input containing repeated values, and an input where the answer is at a boundary. State your expected result before running the program. Then draw the state after each transition. If your invariant does not explain the transition, stop and refine it rather than adding a special case. A counterexample is useful evidence about a missing assumption, not an invitation to patch one input.\n\n## Practice deliberately\n\nBegin with the foundational linked exercise and write a brute-force solution in your own words. Identify the repeated work that this pattern removes. Implement the Java template without looking, then explain why it terminates and why it preserves the invariant. Record whether you needed a hint; a correct answer after reading a solution is learning completion, not independent retrieval. On tomorrow's review, start from the problem constraints and recover the reasoning before recalling code.\n\n## Explain it in an interview\n\nPresent the input assumptions first, describe the meaning of your state, and justify one transition. Separate preprocessing cost from the main loop. Count memory retained by containers and recursive calls as well as the returned result. If a follow-up changes ordering, duplicate handling or allowed mutation, check whether your proof still holds. Test the smallest failing example aloud so an interviewer can see how you validate a design rather than merely recognize a familiar template.",
+    "invariants": [
+      "The example tests whether a sorted array contains a target pair. Before each iteration, any not-yet-eliminated solution lies between left and right. If the current sum is too small, pairing the current left value with any smaller right value cannot reach the target. Therefore that entire row of candidates can be removed by advancing left. The symmetric argument justifies decrementing right when the sum is too large."
+    ],
+    "whenNotToUse": ["When the required ordering, monotonicity, or state assumptions do not hold."],
+    "javaTemplate": "static boolean pairExists(int[] a, long target) {\n    int left = 0, right = a.length - 1;\n    while (left < right) {\n        long sum = (long) a[left] + a[right];\n        if (sum == target) return true;\n        if (sum < target) left++; else right--;\n    }\n    return false;\n}",
+    "workedExample": "[1, 3, 5, 8], target 8 → 1+8 too large → right moves → 1+5 too small → left moves → 3+5 succeeds.",
+    "dryRunSteps": [
+      "[1, 3, 5, 8], target 8",
+      "1+8 too large",
+      "right moves",
+      "1+5 too small",
+      "left moves",
+      "3+5 succeeds."
+    ],
+    "timeComplexity": "O(n) after sorting",
+    "spaceComplexity": "O(1) for the scan",
+    "commonMistakes": [
+      "Sorting when original indices are required",
+      "Using left <= right when an element cannot pair with itself",
+      "Adding integers before widening to long"
+    ],
+    "variants": [
+      "Same-direction pointers solve a different problem: a read pointer explores input while a write pointer maintains an accepted prefix. For removing duplicates, the prefix before write contains exactly the unique values already encountered. For partitioning, define whether order must be preserved before choosing swaps. Two pointers are unsuitable for arbitrary unsorted pair sums unless you first sort or choose hashing. Explain whether sorting cost and storage are included in your complexity claim."
+    ],
+    "practiceProblemIds": [
+      "lc-125",
+      "lc-167",
+      "lc-15",
+      "lc-11",
+      "lc-42",
+      "lc-26",
+      "lc-283",
+      "lc-75"
+    ],
+    "interviewFollowups": [
+      "Prove the state invariant.",
+      "What changes if duplicate values are allowed?",
+      "How would you test boundary conditions?"
+    ],
+    "sourceLinks": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/package-summary.html"
+    ],
+    "estimatedMinutes": 35,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "id": "sliding-window",
+    "slug": "sliding-window",
+    "title": "Sliding window",
+    "category": "DSA",
+    "level": "intermediate",
+    "prerequisiteSlugs": ["two-pointers"],
+    "recognitionClues": [
+      "Contiguous ranges",
+      "repeated range aggregates",
+      "longest interval under a monotone condition"
+    ],
+    "coreIdea": "A sliding window maintains information about one contiguous interval while its boundaries move forward. It saves work by updating the outgoing and incoming contributions instead of recomputing each interval from scratch. Fixed-size windows move both ends together. Variable-size windows expand to include new input and contract until an invariant is restored. The key question is whether removing a leftmost element changes validity in a predictable direction.",
+    "explanationMd": "## Start with the state\n\nA sliding window maintains information about one contiguous interval while its boundaries move forward. It saves work by updating the outgoing and incoming contributions instead of recomputing each interval from scratch. Fixed-size windows move both ends together. Variable-size windows expand to include new input and contract until an invariant is restored. The key question is whether removing a leftmost element changes validity in a predictable direction.\n\n## Derive correctness\n\nThe original example finds the longest contiguous run of distinct integers. Before the result is updated, the frequency map describes exactly the current window and no count exceeds one. Adding the next value may violate only that value's count. Remove elements from the left until its count returns to one. Every value enters once and leaves at most once, so the nested while loop still performs only linear total work.\n\n## Choose the right variation\n\nFor a fixed-size sum, subtract the value leaving the interval and add the entering value. Do not initialize the best sum to zero if all windows can be negative. A variable window for sum at most K is monotone when all values are nonnegative; negative values break that reasoning because removing a value may increase the sum. Prefix sums and hashing can then be appropriate. In Java, character windows must define whether they count UTF-16 code units or Unicode code points.\n\n## Work through a counterexample\n\nBefore coding, choose an empty or minimal valid input, an input containing repeated values, and an input where the answer is at a boundary. State your expected result before running the program. Then draw the state after each transition. If your invariant does not explain the transition, stop and refine it rather than adding a special case. A counterexample is useful evidence about a missing assumption, not an invitation to patch one input.\n\n## Practice deliberately\n\nBegin with the foundational linked exercise and write a brute-force solution in your own words. Identify the repeated work that this pattern removes. Implement the Java template without looking, then explain why it terminates and why it preserves the invariant. Record whether you needed a hint; a correct answer after reading a solution is learning completion, not independent retrieval. On tomorrow's review, start from the problem constraints and recover the reasoning before recalling code.\n\n## Explain it in an interview\n\nPresent the input assumptions first, describe the meaning of your state, and justify one transition. Separate preprocessing cost from the main loop. Count memory retained by containers and recursive calls as well as the returned result. If a follow-up changes ordering, duplicate handling or allowed mutation, check whether your proof still holds. Test the smallest failing example aloud so an interviewer can see how you validate a design rather than merely recognize a familiar template.",
+    "invariants": [
+      "The original example finds the longest contiguous run of distinct integers. Before the result is updated, the frequency map describes exactly the current window and no count exceeds one. Adding the next value may violate only that value's count. Remove elements from the left until its count returns to one. Every value enters once and leaves at most once, so the nested while loop still performs only linear total work."
+    ],
+    "whenNotToUse": ["When the required ordering, monotonicity, or state assumptions do not hold."],
+    "javaTemplate": "static int longestDistinct(int[] a) {\n    java.util.Map<Integer,Integer> counts = new java.util.HashMap<>();\n    int left = 0, best = 0;\n    for (int right = 0; right < a.length; right++) {\n        counts.merge(a[right], 1, Integer::sum);\n        while (counts.get(a[right]) > 1) {\n            counts.put(a[left], counts.get(a[left]) - 1);\n            left++;\n        }\n        best = Math.max(best, right - left + 1);\n    }\n    return best;\n}",
+    "workedExample": "[2, 5, 2, 7] → [2] length 1 → [2,5] length 2 → duplicate 2 removes the first 2 → [5,2] → [5,2,7] length 3.",
+    "dryRunSteps": [
+      "[2, 5, 2, 7]",
+      "[2] length 1",
+      "[2,5] length 2",
+      "duplicate 2 removes the first 2",
+      "[5,2]",
+      "[5,2,7] length 3."
+    ],
+    "timeComplexity": "Expected O(n)",
+    "spaceComplexity": "O(k) distinct values encountered",
+    "commonMistakes": [
+      "Using a single if instead of shrinking until valid",
+      "Applying positive-sum reasoning to negative values",
+      "Updating the answer before restoring validity"
+    ],
+    "variants": [
+      "For a fixed-size sum, subtract the value leaving the interval and add the entering value. Do not initialize the best sum to zero if all windows can be negative. A variable window for sum at most K is monotone when all values are nonnegative; negative values break that reasoning because removing a value may increase the sum. Prefix sums and hashing can then be appropriate. In Java, character windows must define whether they count UTF-16 code units or Unicode code points."
+    ],
+    "practiceProblemIds": [
+      "lc-643",
+      "lc-1456",
+      "lc-3",
+      "lc-209",
+      "lc-424",
+      "lc-567",
+      "lc-438",
+      "lc-76",
+      "lc-239",
+      "lc-1004"
+    ],
+    "interviewFollowups": [
+      "Prove the state invariant.",
+      "What changes if duplicate values are allowed?",
+      "How would you test boundary conditions?"
+    ],
+    "sourceLinks": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/package-summary.html"
+    ],
+    "estimatedMinutes": 35,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "id": "binary-search",
+    "slug": "binary-search",
+    "title": "Binary search",
+    "category": "DSA",
+    "level": "intermediate",
+    "prerequisiteSlugs": ["two-pointers"],
+    "recognitionClues": [
+      "Sorted inputs",
+      "first or last valid position",
+      "monotone feasibility checks"
+    ],
+    "coreIdea": "Binary search isolates the boundary between two regions of a monotone predicate. Finding an exact value is only one application. Lower bound asks for the first position whose value is at least a target. Searching an answer asks for the smallest capacity, speed or time that satisfies a feasibility predicate. Before writing a loop, define the predicate and prove that its truth value changes at most once.",
+    "explanationMd": "## Start with the state\n\nBinary search isolates the boundary between two regions of a monotone predicate. Finding an exact value is only one application. Lower bound asks for the first position whose value is at least a target. Searching an answer asks for the smallest capacity, speed or time that satisfies a feasibility predicate. Before writing a loop, define the predicate and prove that its truth value changes at most once.\n\n## Derive correctness\n\nThe example computes lower bound with a half-open interval [left, right). Everything before left is smaller than target. Every position at or beyond right is at least target. Initially left is zero and right is the length, so both claims hold vacuously. A midpoint smaller than target can be discarded together with every earlier position. Otherwise midpoint remains a possible answer and becomes the new right boundary.\n\n## Choose the right variation\n\nFor answer search, separate feasibility into a named function. A shipping capacity check greedily fills each day without exceeding capacity; larger capacities cannot require more days, which establishes monotonicity. The search bounds need their own proof: the largest package is a lower bound and the total weight is an upper bound. If the predicate scans n values and the answer range has width R, total cost is O(n log R), not O(log n).\n\n## Work through a counterexample\n\nBefore coding, choose an empty or minimal valid input, an input containing repeated values, and an input where the answer is at a boundary. State your expected result before running the program. Then draw the state after each transition. If your invariant does not explain the transition, stop and refine it rather than adding a special case. A counterexample is useful evidence about a missing assumption, not an invitation to patch one input.\n\n## Practice deliberately\n\nBegin with the foundational linked exercise and write a brute-force solution in your own words. Identify the repeated work that this pattern removes. Implement the Java template without looking, then explain why it terminates and why it preserves the invariant. Record whether you needed a hint; a correct answer after reading a solution is learning completion, not independent retrieval. On tomorrow's review, start from the problem constraints and recover the reasoning before recalling code.\n\n## Explain it in an interview\n\nPresent the input assumptions first, describe the meaning of your state, and justify one transition. Separate preprocessing cost from the main loop. Count memory retained by containers and recursive calls as well as the returned result. If a follow-up changes ordering, duplicate handling or allowed mutation, check whether your proof still holds. Test the smallest failing example aloud so an interviewer can see how you validate a design rather than merely recognize a familiar template.",
+    "invariants": [
+      "The example computes lower bound with a half-open interval [left, right). Everything before left is smaller than target. Every position at or beyond right is at least target. Initially left is zero and right is the length, so both claims hold vacuously. A midpoint smaller than target can be discarded together with every earlier position. Otherwise midpoint remains a possible answer and becomes the new right boundary."
+    ],
+    "whenNotToUse": ["When the required ordering, monotonicity, or state assumptions do not hold."],
+    "javaTemplate": "static int lowerBound(int[] a, int target) {\n    int left = 0, right = a.length;\n    while (left < right) {\n        int mid = left + (right - left) / 2;\n        if (a[mid] < target) left = mid + 1;\n        else right = mid;\n    }\n    return left;\n}",
+    "workedExample": "[1,3,3,8], target 3 → midpoint 2 is valid, right=2 → midpoint 1 valid, right=1 → midpoint 0 invalid, left=1 → answer 1.",
+    "dryRunSteps": [
+      "[1,3,3,8], target 3",
+      "midpoint 2 is valid, right=2",
+      "midpoint 1 valid, right=1",
+      "midpoint 0 invalid, left=1",
+      "answer 1."
+    ],
+    "timeComplexity": "O(log n) predicate evaluations",
+    "spaceComplexity": "O(1)",
+    "commonMistakes": [
+      "Mixing inclusive and half-open conventions",
+      "Returning an insertion point as proof of equality",
+      "Overflow in midpoint or feasibility sums"
+    ],
+    "variants": [
+      "For answer search, separate feasibility into a named function. A shipping capacity check greedily fills each day without exceeding capacity; larger capacities cannot require more days, which establishes monotonicity. The search bounds need their own proof: the largest package is a lower bound and the total weight is an upper bound. If the predicate scans n values and the answer range has width R, total cost is O(n log R), not O(log n)."
+    ],
+    "practiceProblemIds": [
+      "lc-704",
+      "lc-35",
+      "lc-34",
+      "lc-33",
+      "lc-153",
+      "lc-875",
+      "lc-1011",
+      "lc-4"
+    ],
+    "interviewFollowups": [
+      "Prove the state invariant.",
+      "What changes if duplicate values are allowed?",
+      "How would you test boundary conditions?"
+    ],
+    "sourceLinks": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/package-summary.html"
+    ],
+    "estimatedMinutes": 35,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "id": "stack",
+    "slug": "stack",
+    "title": "Stacks & monotonic stacks",
+    "category": "DSA",
+    "level": "intermediate",
+    "prerequisiteSlugs": ["arrays-hashing"],
+    "recognitionClues": [
+      "Nested syntax",
+      "nearest greater or smaller values",
+      "unresolved candidates"
+    ],
+    "coreIdea": "A stack records unresolved work in last-in-first-out order. Matching delimiters works because the most recently opened group must close first. A monotonic stack adds an ordering invariant so that a new value can resolve several earlier candidates. Each item is pushed once and popped once, giving amortized linear work even when one iteration contains many pops.",
+    "explanationMd": "## Start with the state\n\nA stack records unresolved work in last-in-first-out order. Matching delimiters works because the most recently opened group must close first. A monotonic stack adds an ordering invariant so that a new value can resolve several earlier candidates. Each item is pushed once and popped once, giving amortized linear work even when one iteration contains many pops.\n\n## Derive correctness\n\nThe example computes the next strictly larger value to the right of each array position. The stack stores indices whose answers are not yet known. Their values are nonincreasing from bottom to top. On a new value, every smaller top value has now found its first larger successor. Popping those positions and assigning their answers preserves both the ordering and unresolved-work invariants.\n\n## Choose the right variation\n\nDecide whether the task asks for strict or non-strict comparisons. Equal heights matter particularly in histogram problems because they change ownership of a span. A stack of indices preserves both original values and distances. For circular arrays, scanning a second logical pass can resolve wraparound candidates, but push each index only in the first pass. For parsing, unmatched closing delimiters must fail immediately and remaining opening delimiters must fail at the end.\n\n## Work through a counterexample\n\nBefore coding, choose an empty or minimal valid input, an input containing repeated values, and an input where the answer is at a boundary. State your expected result before running the program. Then draw the state after each transition. If your invariant does not explain the transition, stop and refine it rather than adding a special case. A counterexample is useful evidence about a missing assumption, not an invitation to patch one input.\n\n## Practice deliberately\n\nBegin with the foundational linked exercise and write a brute-force solution in your own words. Identify the repeated work that this pattern removes. Implement the Java template without looking, then explain why it terminates and why it preserves the invariant. Record whether you needed a hint; a correct answer after reading a solution is learning completion, not independent retrieval. On tomorrow's review, start from the problem constraints and recover the reasoning before recalling code.\n\n## Explain it in an interview\n\nPresent the input assumptions first, describe the meaning of your state, and justify one transition. Separate preprocessing cost from the main loop. Count memory retained by containers and recursive calls as well as the returned result. If a follow-up changes ordering, duplicate handling or allowed mutation, check whether your proof still holds. Test the smallest failing example aloud so an interviewer can see how you validate a design rather than merely recognize a familiar template.",
+    "invariants": [
+      "The example computes the next strictly larger value to the right of each array position. The stack stores indices whose answers are not yet known. Their values are nonincreasing from bottom to top. On a new value, every smaller top value has now found its first larger successor. Popping those positions and assigning their answers preserves both the ordering and unresolved-work invariants."
+    ],
+    "whenNotToUse": ["When the required ordering, monotonicity, or state assumptions do not hold."],
+    "javaTemplate": "static int[] nextLarger(int[] a) {\n    int[] answer = new int[a.length];\n    java.util.Arrays.fill(answer, -1);\n    java.util.Deque<Integer> stack = new java.util.ArrayDeque<>();\n    for (int i = 0; i < a.length; i++) {\n        while (!stack.isEmpty() && a[stack.peek()] < a[i]) {\n            answer[stack.pop()] = a[i];\n        }\n        stack.push(i);\n    }\n    return answer;\n}",
+    "workedExample": "[3,1,4] → stack [0] → push 1 → 4 resolves index 1 and index 0 → answers [4,4,-1].",
+    "dryRunSteps": [
+      "[3,1,4]",
+      "stack [0]",
+      "push 1",
+      "4 resolves index 1 and index 0",
+      "answers [4,4,-1]."
+    ],
+    "timeComplexity": "O(n) amortized",
+    "spaceComplexity": "O(n)",
+    "commonMistakes": [
+      "Choosing < when equal values should resolve",
+      "Storing values when distances require indices",
+      "Using legacy Stack instead of ArrayDeque"
+    ],
+    "variants": [
+      "Decide whether the task asks for strict or non-strict comparisons. Equal heights matter particularly in histogram problems because they change ownership of a span. A stack of indices preserves both original values and distances. For circular arrays, scanning a second logical pass can resolve wraparound candidates, but push each index only in the first pass. For parsing, unmatched closing delimiters must fail immediately and remaining opening delimiters must fail at the end."
+    ],
+    "practiceProblemIds": [
+      "lc-20",
+      "lc-155",
+      "lc-150",
+      "lc-739",
+      "lc-853",
+      "lc-84",
+      "lc-496",
+      "lc-901"
+    ],
+    "interviewFollowups": [
+      "Prove the state invariant.",
+      "What changes if duplicate values are allowed?",
+      "How would you test boundary conditions?"
+    ],
+    "sourceLinks": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/package-summary.html"
+    ],
+    "estimatedMinutes": 35,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "id": "linked-list",
+    "slug": "linked-list",
+    "title": "Linked lists",
+    "category": "DSA",
+    "level": "beginner",
+    "prerequisiteSlugs": ["two-pointers"],
+    "recognitionClues": [
+      "Pointer rewiring",
+      "fast and slow traversal",
+      "constant-space list transformations"
+    ],
+    "coreIdea": "Linked-list algorithms operate on identity and connectivity rather than random-access positions. A node is not interchangeable with another node containing the same value. Before changing a next reference, identify which portion of the remaining list would become unreachable. A dummy node simplifies operations that may replace the head by providing a stable predecessor outside the real data.",
+    "explanationMd": "## Start with the state\n\nLinked-list algorithms operate on identity and connectivity rather than random-access positions. A node is not interchangeable with another node containing the same value. Before changing a next reference, identify which portion of the remaining list would become unreachable. A dummy node simplifies operations that may replace the head by providing a stable predecessor outside the real data.\n\n## Derive correctness\n\nThe reversal example partitions the list into a reversed prefix and an untouched suffix. Previous points to the reversed prefix, current points to the suffix. Save the suffix successor before redirecting current.next, then advance both boundary pointers. The invariant describes every node exactly once, so it also explains why the algorithm neither loses nodes nor creates cycles on an acyclic input.\n\n## Choose the right variation\n\nFast and slow pointers detect a cycle because their relative distance changes by one node each step inside the cycle. Finding the cycle entry requires a second phase and a distance argument; merely memorizing the reset loses the reasoning. When removing the nth node from the end, define the gap relative to a dummy predecessor. For merging lists, state whether nodes may be reused or copies are required. Mutation changes alias-visible structure and therefore belongs in the method contract.\n\n## Work through a counterexample\n\nBefore coding, choose an empty or minimal valid input, an input containing repeated values, and an input where the answer is at a boundary. State your expected result before running the program. Then draw the state after each transition. If your invariant does not explain the transition, stop and refine it rather than adding a special case. A counterexample is useful evidence about a missing assumption, not an invitation to patch one input.\n\n## Practice deliberately\n\nBegin with the foundational linked exercise and write a brute-force solution in your own words. Identify the repeated work that this pattern removes. Implement the Java template without looking, then explain why it terminates and why it preserves the invariant. Record whether you needed a hint; a correct answer after reading a solution is learning completion, not independent retrieval. On tomorrow's review, start from the problem constraints and recover the reasoning before recalling code.\n\n## Explain it in an interview\n\nPresent the input assumptions first, describe the meaning of your state, and justify one transition. Separate preprocessing cost from the main loop. Count memory retained by containers and recursive calls as well as the returned result. If a follow-up changes ordering, duplicate handling or allowed mutation, check whether your proof still holds. Test the smallest failing example aloud so an interviewer can see how you validate a design rather than merely recognize a familiar template.",
+    "invariants": [
+      "The reversal example partitions the list into a reversed prefix and an untouched suffix. Previous points to the reversed prefix, current points to the suffix. Save the suffix successor before redirecting current.next, then advance both boundary pointers. The invariant describes every node exactly once, so it also explains why the algorithm neither loses nodes nor creates cycles on an acyclic input."
+    ],
+    "whenNotToUse": ["When the required ordering, monotonicity, or state assumptions do not hold."],
+    "javaTemplate": "static final class Node {\n    final int value; Node next;\n    Node(int value) { this.value = value; }\n}\nstatic Node reverse(Node head) {\n    Node previous = null, current = head;\n    while (current != null) {\n        Node next = current.next;\n        current.next = previous;\n        previous = current;\n        current = next;\n    }\n    return previous;\n}",
+    "workedExample": "1→2→3 → save 2, reverse 1→null → save 3, reverse 2→1 → save null, reverse 3→2→1.",
+    "dryRunSteps": [
+      "1→2→3",
+      "save 2, reverse 1→null",
+      "save 3, reverse 2→1",
+      "save null, reverse 3→2→1."
+    ],
+    "timeComplexity": "O(n)",
+    "spaceComplexity": "O(1)",
+    "commonMistakes": [
+      "Overwriting next before saving the suffix",
+      "Comparing values rather than node identity",
+      "Failing on empty or one-node inputs"
+    ],
+    "variants": [
+      "Fast and slow pointers detect a cycle because their relative distance changes by one node each step inside the cycle. Finding the cycle entry requires a second phase and a distance argument; merely memorizing the reset loses the reasoning. When removing the nth node from the end, define the gap relative to a dummy predecessor. For merging lists, state whether nodes may be reused or copies are required. Mutation changes alias-visible structure and therefore belongs in the method contract."
+    ],
+    "practiceProblemIds": [
+      "lc-206",
+      "lc-21",
+      "lc-141",
+      "lc-19",
+      "lc-143",
+      "lc-2",
+      "lc-138",
+      "lc-23",
+      "lc-25"
+    ],
+    "interviewFollowups": [
+      "Prove the state invariant.",
+      "What changes if duplicate values are allowed?",
+      "How would you test boundary conditions?"
+    ],
+    "sourceLinks": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/package-summary.html"
+    ],
+    "estimatedMinutes": 35,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "id": "trees",
+    "slug": "trees",
+    "title": "Trees: recursive decomposition",
+    "category": "DSA",
+    "level": "intermediate",
+    "prerequisiteSlugs": ["linked-list"],
+    "recognitionClues": [
+      "Hierarchical data",
+      "answers built from child summaries",
+      "root-to-leaf decisions"
+    ],
+    "coreIdea": "Tree recursion turns a problem about an entire structure into a contract for one subtree. Define precisely what each call returns before writing base cases. Height returns a path length, while a maximum-path-sum algorithm often returns one extendable branch and updates a separate best answer for a path crossing the current node. Confusing those meanings produces code that looks plausible but counts impossible paths.",
+    "explanationMd": "## Start with the state\n\nTree recursion turns a problem about an entire structure into a contract for one subtree. Define precisely what each call returns before writing base cases. Height returns a path length, while a maximum-path-sum algorithm often returns one extendable branch and updates a separate best answer for a path crossing the current node. Confusing those meanings produces code that looks plausible but counts impossible paths.\n\n## Derive correctness\n\nThe example computes height in nodes. A null subtree has height zero. A non-null subtree has height one plus the greater child height. Each recursive call promises that its result is correct for its own root, so the parent only needs to combine two integers. This is structural induction, and it applies to balanced checks, subtree summaries and bottom-up dynamic programming.\n\n## Choose the right variation\n\nA skewed tree has height n, so recursion can exhaust the Java stack even when the algorithm is asymptotically optimal. An explicit stack offers control over traversal depth. Breadth-first traversal uses a queue whose size is proportional to maximum width, which may also be linear. BST validation carries lower and upper bounds through the whole path; a child can satisfy its parent relation and still violate an ancestor constraint. Define duplicate policy before choosing strict bounds.\n\n## Work through a counterexample\n\nBefore coding, choose an empty or minimal valid input, an input containing repeated values, and an input where the answer is at a boundary. State your expected result before running the program. Then draw the state after each transition. If your invariant does not explain the transition, stop and refine it rather than adding a special case. A counterexample is useful evidence about a missing assumption, not an invitation to patch one input.\n\n## Practice deliberately\n\nBegin with the foundational linked exercise and write a brute-force solution in your own words. Identify the repeated work that this pattern removes. Implement the Java template without looking, then explain why it terminates and why it preserves the invariant. Record whether you needed a hint; a correct answer after reading a solution is learning completion, not independent retrieval. On tomorrow's review, start from the problem constraints and recover the reasoning before recalling code.\n\n## Explain it in an interview\n\nPresent the input assumptions first, describe the meaning of your state, and justify one transition. Separate preprocessing cost from the main loop. Count memory retained by containers and recursive calls as well as the returned result. If a follow-up changes ordering, duplicate handling or allowed mutation, check whether your proof still holds. Test the smallest failing example aloud so an interviewer can see how you validate a design rather than merely recognize a familiar template.",
+    "invariants": [
+      "The example computes height in nodes. A null subtree has height zero. A non-null subtree has height one plus the greater child height. Each recursive call promises that its result is correct for its own root, so the parent only needs to combine two integers. This is structural induction, and it applies to balanced checks, subtree summaries and bottom-up dynamic programming."
+    ],
+    "whenNotToUse": ["When the required ordering, monotonicity, or state assumptions do not hold."],
+    "javaTemplate": "static final class TreeNode {\n    int value; TreeNode left, right;\n    TreeNode(int value) { this.value = value; }\n}\nstatic int height(TreeNode root) {\n    if (root == null) return 0;\n    return 1 + Math.max(height(root.left), height(root.right));\n}",
+    "workedExample": "A root with two leaf children → each null returns 0 → leaves return 1 → root returns 2.",
+    "dryRunSteps": [
+      "A root with two leaf children",
+      "each null returns 0",
+      "leaves return 1",
+      "root returns 2."
+    ],
+    "timeComplexity": "O(n)",
+    "spaceComplexity": "O(h) call stack",
+    "commonMistakes": [
+      "Reporting O(log n) stack for an arbitrary tree",
+      "Sharing mutable path lists across branches",
+      "Using local parent comparisons to validate a BST"
+    ],
+    "variants": [
+      "A skewed tree has height n, so recursion can exhaust the Java stack even when the algorithm is asymptotically optimal. An explicit stack offers control over traversal depth. Breadth-first traversal uses a queue whose size is proportional to maximum width, which may also be linear. BST validation carries lower and upper bounds through the whole path; a child can satisfy its parent relation and still violate an ancestor constraint. Define duplicate policy before choosing strict bounds."
+    ],
+    "practiceProblemIds": [
+      "lc-104",
+      "lc-226",
+      "lc-100",
+      "lc-102",
+      "lc-543",
+      "lc-110",
+      "lc-98",
+      "lc-230",
+      "lc-235",
+      "lc-124"
+    ],
+    "interviewFollowups": [
+      "Prove the state invariant.",
+      "What changes if duplicate values are allowed?",
+      "How would you test boundary conditions?"
+    ],
+    "sourceLinks": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/package-summary.html"
+    ],
+    "estimatedMinutes": 35,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "id": "graphs",
+    "slug": "graphs",
+    "title": "Graphs: traversal & reachability",
+    "category": "DSA",
+    "level": "intermediate",
+    "prerequisiteSlugs": ["trees"],
+    "recognitionClues": [
+      "Reachability",
+      "connected components",
+      "minimum number of unweighted steps"
+    ],
+    "coreIdea": "A graph models entities connected by directed or undirected relationships. Unlike a tree, it may contain cycles, multiple routes to the same vertex and disconnected components. Traversal therefore needs explicit visited state. The representation determines practical cost: adjacency lists suit sparse graphs; a matrix spends quadratic memory but offers constant-time edge lookup.",
+    "explanationMd": "## Start with the state\n\nA graph models entities connected by directed or undirected relationships. Unlike a tree, it may contain cycles, multiple routes to the same vertex and disconnected components. Traversal therefore needs explicit visited state. The representation determines practical cost: adjacency lists suit sparse graphs; a matrix spends quadratic memory but offers constant-time edge lookup.\n\n## Derive correctness\n\nThe example computes unweighted shortest-path distances from one source using breadth-first search. A vertex is marked when enqueued, preventing repeated frontier entries. The queue processes vertices in nondecreasing distance, so the first discovery of a neighbor gives its shortest path length. That proof relies on every edge having the same cost; weighted edges invalidate the argument.\n\n## Choose the right variation\n\nFor a grid, coordinates are graph vertices and allowed moves define edges. Clarify whether diagonal moves count and whether mutating the grid is permitted. In directed cycle detection, visited alone is insufficient: distinguish currently exploring vertices from fully processed ones. In undirected DFS, skip the parent edge before reporting a cycle. Topological ordering is meaningful only for directed acyclic graphs, and an incomplete ordering is evidence of a cycle rather than a partial valid schedule.\n\n## Work through a counterexample\n\nBefore coding, choose an empty or minimal valid input, an input containing repeated values, and an input where the answer is at a boundary. State your expected result before running the program. Then draw the state after each transition. If your invariant does not explain the transition, stop and refine it rather than adding a special case. A counterexample is useful evidence about a missing assumption, not an invitation to patch one input.\n\n## Practice deliberately\n\nBegin with the foundational linked exercise and write a brute-force solution in your own words. Identify the repeated work that this pattern removes. Implement the Java template without looking, then explain why it terminates and why it preserves the invariant. Record whether you needed a hint; a correct answer after reading a solution is learning completion, not independent retrieval. On tomorrow's review, start from the problem constraints and recover the reasoning before recalling code.\n\n## Explain it in an interview\n\nPresent the input assumptions first, describe the meaning of your state, and justify one transition. Separate preprocessing cost from the main loop. Count memory retained by containers and recursive calls as well as the returned result. If a follow-up changes ordering, duplicate handling or allowed mutation, check whether your proof still holds. Test the smallest failing example aloud so an interviewer can see how you validate a design rather than merely recognize a familiar template.",
+    "invariants": [
+      "The example computes unweighted shortest-path distances from one source using breadth-first search. A vertex is marked when enqueued, preventing repeated frontier entries. The queue processes vertices in nondecreasing distance, so the first discovery of a neighbor gives its shortest path length. That proof relies on every edge having the same cost; weighted edges invalidate the argument."
+    ],
+    "whenNotToUse": ["When the required ordering, monotonicity, or state assumptions do not hold."],
+    "javaTemplate": "static int[] distances(java.util.List<java.util.List<Integer>> graph, int source) {\n    int[] distance = new int[graph.size()];\n    java.util.Arrays.fill(distance, -1);\n    java.util.Queue<Integer> queue = new java.util.ArrayDeque<>();\n    distance[source] = 0; queue.add(source);\n    while (!queue.isEmpty()) {\n        int node = queue.remove();\n        for (int next : graph.get(node)) {\n            if (distance[next] != -1) continue;\n            distance[next] = distance[node] + 1;\n            queue.add(next);\n        }\n    }\n    return distance;\n}",
+    "workedExample": "Edges 0→1, 0→2, 1→3 → enqueue 0 at distance 0 → discover 1 and 2 at 1 → discover 3 at 2.",
+    "dryRunSteps": [
+      "Edges 0→1, 0→2, 1→3",
+      "enqueue 0 at distance 0",
+      "discover 1 and 2 at 1",
+      "discover 3 at 2."
+    ],
+    "timeComplexity": "O(V + E)",
+    "spaceComplexity": "O(V) beyond adjacency storage",
+    "commonMistakes": [
+      "Marking visited only when dequeued",
+      "Ignoring disconnected components",
+      "Using BFS for arbitrary edge weights"
+    ],
+    "variants": [
+      "For a grid, coordinates are graph vertices and allowed moves define edges. Clarify whether diagonal moves count and whether mutating the grid is permitted. In directed cycle detection, visited alone is insufficient: distinguish currently exploring vertices from fully processed ones. In undirected DFS, skip the parent edge before reporting a cycle. Topological ordering is meaningful only for directed acyclic graphs, and an incomplete ordering is evidence of a cycle rather than a partial valid schedule."
+    ],
+    "practiceProblemIds": [
+      "lc-200",
+      "lc-133",
+      "lc-695",
+      "lc-994",
+      "lc-207",
+      "lc-210",
+      "lc-417",
+      "lc-127",
+      "lc-743",
+      "lc-684"
+    ],
+    "interviewFollowups": [
+      "Prove the state invariant.",
+      "What changes if duplicate values are allowed?",
+      "How would you test boundary conditions?"
+    ],
+    "sourceLinks": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/package-summary.html"
+    ],
+    "estimatedMinutes": 35,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "id": "backtracking",
+    "slug": "backtracking",
+    "title": "Backtracking",
+    "category": "DSA",
+    "level": "intermediate",
+    "prerequisiteSlugs": ["trees"],
+    "recognitionClues": [
+      "Enumerating combinations",
+      "constrained construction",
+      "reversible decisions"
+    ],
+    "coreIdea": "Backtracking enumerates a decision tree while maintaining a partial candidate. Choose an option, extend the state, recurse, then undo that exact change. This discipline keeps sibling branches independent. Pruning removes branches only when no extension can produce a valid result; a performance optimization without a correctness argument can silently discard solutions.",
+    "explanationMd": "## Start with the state\n\nBacktracking enumerates a decision tree while maintaining a partial candidate. Choose an option, extend the state, recurse, then undo that exact change. This discipline keeps sibling branches independent. Pruning removes branches only when no extension can produce a valid result; a performance optimization without a correctness argument can silently discard solutions.\n\n## Derive correctness\n\nThe example enumerates subsets of distinct integers. At position i, the path contains precisely the chosen elements among positions before i. One branch excludes the next element; another includes it. At the end, copy the path into the result. Saving the same mutable list would make every result refer to one evolving object, a common aliasing bug.\n\n## Choose the right variation\n\nDuplicates require a definition of uniqueness. Sorting and skipping equal candidates at the same recursion depth removes duplicate combinations while still permitting repeated equal values at different depths when the input contains them. Permutations usually require a used-index array rather than a monotonically increasing start index. For word search, restore visited cells before returning to another branch. Count output construction in complexity: an exponential number of answers cannot be generated in polynomial total time.\n\n## Work through a counterexample\n\nBefore coding, choose an empty or minimal valid input, an input containing repeated values, and an input where the answer is at a boundary. State your expected result before running the program. Then draw the state after each transition. If your invariant does not explain the transition, stop and refine it rather than adding a special case. A counterexample is useful evidence about a missing assumption, not an invitation to patch one input.\n\n## Practice deliberately\n\nBegin with the foundational linked exercise and write a brute-force solution in your own words. Identify the repeated work that this pattern removes. Implement the Java template without looking, then explain why it terminates and why it preserves the invariant. Record whether you needed a hint; a correct answer after reading a solution is learning completion, not independent retrieval. On tomorrow's review, start from the problem constraints and recover the reasoning before recalling code.\n\n## Explain it in an interview\n\nPresent the input assumptions first, describe the meaning of your state, and justify one transition. Separate preprocessing cost from the main loop. Count memory retained by containers and recursive calls as well as the returned result. If a follow-up changes ordering, duplicate handling or allowed mutation, check whether your proof still holds. Test the smallest failing example aloud so an interviewer can see how you validate a design rather than merely recognize a familiar template.",
+    "invariants": [
+      "The example enumerates subsets of distinct integers. At position i, the path contains precisely the chosen elements among positions before i. One branch excludes the next element; another includes it. At the end, copy the path into the result. Saving the same mutable list would make every result refer to one evolving object, a common aliasing bug."
+    ],
+    "whenNotToUse": ["When the required ordering, monotonicity, or state assumptions do not hold."],
+    "javaTemplate": "static java.util.List<java.util.List<Integer>> subsets(int[] a) {\n    var result = new java.util.ArrayList<java.util.List<Integer>>();\n    collect(a, 0, new java.util.ArrayList<>(), result);\n    return result;\n}\nstatic void collect(int[] a, int i, java.util.List<Integer> path,\n                    java.util.List<java.util.List<Integer>> result) {\n    if (i == a.length) { result.add(new java.util.ArrayList<>(path)); return; }\n    collect(a, i + 1, path, result);\n    path.add(a[i]);\n    collect(a, i + 1, path, result);\n    path.remove(path.size() - 1);\n}",
+    "workedExample": "[2,5] → exclude both: [] → include 5: [5] → include 2 only: [2] → include both: [2,5].",
+    "dryRunSteps": [
+      "[2,5]",
+      "exclude both: []",
+      "include 5: [5]",
+      "include 2 only: [2]",
+      "include both: [2,5]."
+    ],
+    "timeComplexity": "O(n × 2^n) including output copies",
+    "spaceComplexity": "O(n) working stack; O(n × 2^n) output",
+    "commonMistakes": [
+      "Forgetting to undo a choice",
+      "Saving mutable paths without copying",
+      "Pruning negative-number sums with positive-only assumptions"
+    ],
+    "variants": [
+      "Duplicates require a definition of uniqueness. Sorting and skipping equal candidates at the same recursion depth removes duplicate combinations while still permitting repeated equal values at different depths when the input contains them. Permutations usually require a used-index array rather than a monotonically increasing start index. For word search, restore visited cells before returning to another branch. Count output construction in complexity: an exponential number of answers cannot be generated in polynomial total time."
+    ],
+    "practiceProblemIds": ["lc-78", "lc-90", "lc-46", "lc-39", "lc-40", "lc-79", "lc-131", "lc-51"],
+    "interviewFollowups": [
+      "Prove the state invariant.",
+      "What changes if duplicate values are allowed?",
+      "How would you test boundary conditions?"
+    ],
+    "sourceLinks": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/package-summary.html"
+    ],
+    "estimatedMinutes": 35,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "id": "dynamic-programming",
+    "slug": "dynamic-programming",
+    "title": "Dynamic programming",
+    "category": "DSA",
+    "level": "intermediate",
+    "prerequisiteSlugs": ["backtracking"],
+    "recognitionClues": [
+      "Repeated subproblems",
+      "optimal choices with a small state",
+      "counting constrained constructions"
+    ],
+    "coreIdea": "Dynamic programming stores answers to repeated subproblems. A state is a sufficient summary of the past for deciding the future; if two histories with the same state need different answers, the state is incomplete. Start with a correct recurrence and explicit base cases, then choose memoization or tabulation. Optimization of storage is a later step because it can obscure dependency direction.",
+    "explanationMd": "## Start with the state\n\nDynamic programming stores answers to repeated subproblems. A state is a sufficient summary of the past for deciding the future; if two histories with the same state need different answers, the state is incomplete. Start with a correct recurrence and explicit base cases, then choose memoization or tabulation. Optimization of storage is a later step because it can obscure dependency direction.\n\n## Derive correctness\n\nThe example returns the maximum sum of nonadjacent values, allowing an empty selection. Before processing value i, skip is the best total that excludes the previous element and take is the best total that includes it. Taking the new value requires the previous skip total. Skipping it allows either prior state. Compute both new values from the old state before assigning them.\n\n## Choose the right variation\n\nWrite down what an entry means in a full sentence. For subset sum, the state may mean whether a sum is reachable using a prefix of items. Iterating capacities downward ensures each item is used once; iterating upward permits reuse and solves a different problem. For reconstruction, store choices or recover them from the full table. Distinguish auxiliary memory from output memory, and distinguish the number of states from the amount of transition work performed per state.\n\n## Work through a counterexample\n\nBefore coding, choose an empty or minimal valid input, an input containing repeated values, and an input where the answer is at a boundary. State your expected result before running the program. Then draw the state after each transition. If your invariant does not explain the transition, stop and refine it rather than adding a special case. A counterexample is useful evidence about a missing assumption, not an invitation to patch one input.\n\n## Practice deliberately\n\nBegin with the foundational linked exercise and write a brute-force solution in your own words. Identify the repeated work that this pattern removes. Implement the Java template without looking, then explain why it terminates and why it preserves the invariant. Record whether you needed a hint; a correct answer after reading a solution is learning completion, not independent retrieval. On tomorrow's review, start from the problem constraints and recover the reasoning before recalling code.\n\n## Explain it in an interview\n\nPresent the input assumptions first, describe the meaning of your state, and justify one transition. Separate preprocessing cost from the main loop. Count memory retained by containers and recursive calls as well as the returned result. If a follow-up changes ordering, duplicate handling or allowed mutation, check whether your proof still holds. Test the smallest failing example aloud so an interviewer can see how you validate a design rather than merely recognize a familiar template.",
+    "invariants": [
+      "The example returns the maximum sum of nonadjacent values, allowing an empty selection. Before processing value i, skip is the best total that excludes the previous element and take is the best total that includes it. Taking the new value requires the previous skip total. Skipping it allows either prior state. Compute both new values from the old state before assigning them."
+    ],
+    "whenNotToUse": ["When the required ordering, monotonicity, or state assumptions do not hold."],
+    "javaTemplate": "static long bestNonAdjacent(int[] values) {\n    long skip = 0, take = Long.MIN_VALUE;\n    for (int value : values) {\n        long nextTake = skip + value;\n        long nextSkip = Math.max(skip, take);\n        take = nextTake; skip = nextSkip;\n    }\n    return Math.max(skip, take);\n}",
+    "workedExample": "[4,1,7] → (skip,take)=(0,4) → (4,1) → (4,11) → answer 11.",
+    "dryRunSteps": ["[4,1,7]", "(skip,take)=(0,4)", "(4,1)", "(4,11)", "answer 11."],
+    "timeComplexity": "O(n)",
+    "spaceComplexity": "O(1)",
+    "commonMistakes": [
+      "Updating a state before another transition uses its old value",
+      "Treating uncomputed zero as a valid cached answer",
+      "Omitting a state variable such as remaining capacity"
+    ],
+    "variants": [
+      "Write down what an entry means in a full sentence. For subset sum, the state may mean whether a sum is reachable using a prefix of items. Iterating capacities downward ensures each item is used once; iterating upward permits reuse and solves a different problem. For reconstruction, store choices or recover them from the full table. Distinguish auxiliary memory from output memory, and distinguish the number of states from the amount of transition work performed per state."
+    ],
+    "practiceProblemIds": [
+      "lc-70",
+      "lc-198",
+      "lc-213",
+      "lc-322",
+      "lc-300",
+      "lc-139",
+      "lc-416",
+      "lc-62",
+      "lc-1143",
+      "lc-72",
+      "lc-312",
+      "lc-10"
+    ],
+    "interviewFollowups": [
+      "Prove the state invariant.",
+      "What changes if duplicate values are allowed?",
+      "How would you test boundary conditions?"
+    ],
+    "sourceLinks": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/package-summary.html"
+    ],
+    "estimatedMinutes": 35,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "generatedAt": "2026-10-17T06:31:28.971Z",
+  "published": {
+    "patterns": 10,
+    "problems": 110,
+    "javaLessons": 12,
+    "backendLessons": 8,
+    "csLessons": 3,
+    "lld": 5,
+    "hld": 5
+  },
+  "unverifiedProblemLinks": 110,
+  "prepHub": {
+    "courses": 16,
+    "modules": 239,
+    "uniqueEntries": 1355,
+    "practiceLinks": 497,
+    "unverifiedResources": 0
+  },
+  "errors": []
+}

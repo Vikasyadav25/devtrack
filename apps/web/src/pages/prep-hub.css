@@ -1,0 +1,183 @@
+.prep-hub .prep-tracks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 24px 0;
+}
+.prep-hub .prep-tracks button {
+  padding: 10px 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.prep-hub .prep-tracks button[aria-current] {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
+}
+.prep-hub .prep-intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 16px;
+}
+.prep-hub .prep-intro > div {
+  flex: 1;
+  min-width: 180px;
+}
+.prep-hub .prep-intro svg {
+  color: var(--green);
+}
+.prep-hub .prep-intro h2 {
+  margin-top: 8px;
+}
+.prep-hub .prep-intro p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.prep-hub .prep-intro .prep-scope {
+  flex-basis: 100%;
+  font-size: 12px;
+}
+.prep-hub a {
+  overflow-wrap: anywhere;
+}
+.prep-hub .prep-intro > a,
+.prep-hub .prep-course header > a,
+.prep-hub .prep-local {
+  color: var(--green);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+}
+.prep-hub .prep-filters {
+  flex-wrap: wrap;
+  margin: 24px 0 12px;
+}
+.prep-hub .prep-filters select {
+  max-width: 280px;
+}
+.prep-hub .prep-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.prep-hub .prep-check input {
+  accent-color: var(--green);
+  width: 16px;
+  height: 16px;
+}
+.prep-hub .prep-count {
+  font-size: 12px;
+  margin-bottom: 20px;
+}
+.prep-hub .prep-courses {
+  display: grid;
+  gap: 22px;
+}
+.prep-hub .prep-course {
+  margin: 0;
+}
+.prep-hub .prep-course header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.prep-hub .prep-course header h2 {
+  margin-top: 6px;
+}
+.prep-hub .prep-module {
+  border-top: 1px solid var(--border);
+}
+.prep-hub .prep-module summary {
+  padding: 17px 0;
+  cursor: pointer;
+  line-height: 1.6;
+}
+.prep-hub .prep-module summary small {
+  color: var(--muted);
+  margin-left: 12px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.prep-hub .prep-module ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 12px;
+}
+.prep-hub .prep-topic {
+  padding: 15px;
+  background: var(--bg);
+  border-radius: 10px;
+  margin: 6px 0;
+}
+.prep-hub .prep-topic-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 13px;
+}
+.prep-hub .prep-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  margin-top: 10px;
+}
+.prep-hub .prep-resource {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 6px;
+  color: var(--green);
+  font-size: 12px;
+  max-width: 100%;
+}
+.prep-hub .prep-resource small {
+  color: var(--muted);
+  grid-column: 1;
+  font-size: 10px;
+  margin-top: 3px;
+}
+.prep-hub .prep-resource svg {
+  grid-column: 2;
+  grid-row: 1;
+  margin-top: 2px;
+}
+.prep-hub .prep-footnote {
+  font-size: 11px;
+  margin-top: 24px;
+}
+@media (max-width: 600px) {
+  .prep-hub .prep-tracks {
+    gap: 7px;
+  }
+  .prep-hub .prep-tracks button {
+    flex: 1 1 40%;
+    padding: 10px;
+    font-size: 12px;
+  }
+  .prep-hub .prep-filters > .search-field,
+  .prep-hub .prep-filters select {
+    width: 100%;
+    max-width: none;
+    flex-basis: 100%;
+  }
+  .prep-hub .prep-topic {
+    padding: 12px;
+  }
+  .prep-hub .prep-links {
+    flex-direction: column;
+    align-items: start;
+  }
+}

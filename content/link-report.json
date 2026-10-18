@@ -1,0 +1,665 @@
+{
+  "checkedAt": "2026-10-16T17:46:13.941Z",
+  "report": [
+    {
+      "id": "lc-1",
+      "url": "https://leetcode.com/problems/two-sum/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-49",
+      "url": "https://leetcode.com/problems/group-anagrams/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-347",
+      "url": "https://leetcode.com/problems/top-k-frequent-elements/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-238",
+      "url": "https://leetcode.com/problems/product-of-array-except-self/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-128",
+      "url": "https://leetcode.com/problems/longest-consecutive-sequence/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-36",
+      "url": "https://leetcode.com/problems/valid-sudoku/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-169",
+      "url": "https://leetcode.com/problems/majority-element/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-560",
+      "url": "https://leetcode.com/problems/subarray-sum-equals-k/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-125",
+      "url": "https://leetcode.com/problems/valid-palindrome/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-217",
+      "url": "https://leetcode.com/problems/contains-duplicate/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-15",
+      "url": "https://leetcode.com/problems/3sum/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-11",
+      "url": "https://leetcode.com/problems/container-with-most-water/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-42",
+      "url": "https://leetcode.com/problems/trapping-rain-water/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-26",
+      "url": "https://leetcode.com/problems/remove-duplicates-from-sorted-array/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-283",
+      "url": "https://leetcode.com/problems/move-zeroes/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-75",
+      "url": "https://leetcode.com/problems/sort-colors/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-643",
+      "url": "https://leetcode.com/problems/maximum-average-subarray-i/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-1456",
+      "url": "https://leetcode.com/problems/maximum-number-of-vowels-in-a-substring-of-given-length/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-3",
+      "url": "https://leetcode.com/problems/longest-substring-without-repeating-characters/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-167",
+      "url": "https://leetcode.com/problems/two-sum-ii-input-array-is-sorted/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-209",
+      "url": "https://leetcode.com/problems/minimum-size-subarray-sum/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-424",
+      "url": "https://leetcode.com/problems/longest-repeating-character-replacement/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-567",
+      "url": "https://leetcode.com/problems/permutation-in-string/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-438",
+      "url": "https://leetcode.com/problems/find-all-anagrams-in-a-string/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-76",
+      "url": "https://leetcode.com/problems/minimum-window-substring/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-239",
+      "url": "https://leetcode.com/problems/sliding-window-maximum/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-1004",
+      "url": "https://leetcode.com/problems/max-consecutive-ones-iii/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-704",
+      "url": "https://leetcode.com/problems/binary-search/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-35",
+      "url": "https://leetcode.com/problems/search-insert-position/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-34",
+      "url": "https://leetcode.com/problems/find-first-and-last-position-of-element-in-sorted-array/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-33",
+      "url": "https://leetcode.com/problems/search-in-rotated-sorted-array/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-153",
+      "url": "https://leetcode.com/problems/find-minimum-in-rotated-sorted-array/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-875",
+      "url": "https://leetcode.com/problems/koko-eating-bananas/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-1011",
+      "url": "https://leetcode.com/problems/capacity-to-ship-packages-within-d-days/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-4",
+      "url": "https://leetcode.com/problems/median-of-two-sorted-arrays/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-20",
+      "url": "https://leetcode.com/problems/valid-parentheses/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-155",
+      "url": "https://leetcode.com/problems/min-stack/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-150",
+      "url": "https://leetcode.com/problems/evaluate-reverse-polish-notation/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-739",
+      "url": "https://leetcode.com/problems/daily-temperatures/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-853",
+      "url": "https://leetcode.com/problems/car-fleet/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-84",
+      "url": "https://leetcode.com/problems/largest-rectangle-in-histogram/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-496",
+      "url": "https://leetcode.com/problems/next-greater-element-i/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-901",
+      "url": "https://leetcode.com/problems/online-stock-span/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-206",
+      "url": "https://leetcode.com/problems/reverse-linked-list/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-21",
+      "url": "https://leetcode.com/problems/merge-two-sorted-lists/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-19",
+      "url": "https://leetcode.com/problems/remove-nth-node-from-end-of-list/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-143",
+      "url": "https://leetcode.com/problems/reorder-list/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-2",
+      "url": "https://leetcode.com/problems/add-two-numbers/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-138",
+      "url": "https://leetcode.com/problems/copy-list-with-random-pointer/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-23",
+      "url": "https://leetcode.com/problems/merge-k-sorted-lists/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-25",
+      "url": "https://leetcode.com/problems/reverse-nodes-in-k-group/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-104",
+      "url": "https://leetcode.com/problems/maximum-depth-of-binary-tree/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-226",
+      "url": "https://leetcode.com/problems/invert-binary-tree/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-100",
+      "url": "https://leetcode.com/problems/same-tree/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-102",
+      "url": "https://leetcode.com/problems/binary-tree-level-order-traversal/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-141",
+      "url": "https://leetcode.com/problems/linked-list-cycle/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-543",
+      "url": "https://leetcode.com/problems/diameter-of-binary-tree/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-110",
+      "url": "https://leetcode.com/problems/balanced-binary-tree/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-98",
+      "url": "https://leetcode.com/problems/validate-binary-search-tree/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-230",
+      "url": "https://leetcode.com/problems/kth-smallest-element-in-a-bst/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-235",
+      "url": "https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-search-tree/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-124",
+      "url": "https://leetcode.com/problems/binary-tree-maximum-path-sum/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-200",
+      "url": "https://leetcode.com/problems/number-of-islands/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-133",
+      "url": "https://leetcode.com/problems/clone-graph/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-242",
+      "url": "https://leetcode.com/problems/valid-anagram/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-695",
+      "url": "https://leetcode.com/problems/max-area-of-island/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-994",
+      "url": "https://leetcode.com/problems/rotting-oranges/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-210",
+      "url": "https://leetcode.com/problems/course-schedule-ii/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-417",
+      "url": "https://leetcode.com/problems/pacific-atlantic-water-flow/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-127",
+      "url": "https://leetcode.com/problems/word-ladder/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-684",
+      "url": "https://leetcode.com/problems/redundant-connection/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-78",
+      "url": "https://leetcode.com/problems/subsets/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-90",
+      "url": "https://leetcode.com/problems/subsets-ii/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-46",
+      "url": "https://leetcode.com/problems/permutations/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-39",
+      "url": "https://leetcode.com/problems/combination-sum/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-40",
+      "url": "https://leetcode.com/problems/combination-sum-ii/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-79",
+      "url": "https://leetcode.com/problems/word-search/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-131",
+      "url": "https://leetcode.com/problems/palindrome-partitioning/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-207",
+      "url": "https://leetcode.com/problems/course-schedule/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-51",
+      "url": "https://leetcode.com/problems/n-queens/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-70",
+      "url": "https://leetcode.com/problems/climbing-stairs/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-743",
+      "url": "https://leetcode.com/problems/network-delay-time/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-213",
+      "url": "https://leetcode.com/problems/house-robber-ii/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-322",
+      "url": "https://leetcode.com/problems/coin-change/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-300",
+      "url": "https://leetcode.com/problems/longest-increasing-subsequence/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-139",
+      "url": "https://leetcode.com/problems/word-break/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-62",
+      "url": "https://leetcode.com/problems/unique-paths/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-1143",
+      "url": "https://leetcode.com/problems/longest-common-subsequence/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-72",
+      "url": "https://leetcode.com/problems/edit-distance/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-312",
+      "url": "https://leetcode.com/problems/burst-balloons/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-10",
+      "url": "https://leetcode.com/problems/regular-expression-matching/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-215",
+      "url": "https://leetcode.com/problems/kth-largest-element-in-an-array/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-703",
+      "url": "https://leetcode.com/problems/kth-largest-element-in-a-stream/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-198",
+      "url": "https://leetcode.com/problems/house-robber/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-295",
+      "url": "https://leetcode.com/problems/find-median-from-data-stream/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-56",
+      "url": "https://leetcode.com/problems/merge-intervals/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-57",
+      "url": "https://leetcode.com/problems/insert-interval/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-416",
+      "url": "https://leetcode.com/problems/partition-equal-subset-sum/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-55",
+      "url": "https://leetcode.com/problems/jump-game/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-45",
+      "url": "https://leetcode.com/problems/jump-game-ii/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-134",
+      "url": "https://leetcode.com/problems/gas-station/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-621",
+      "url": "https://leetcode.com/problems/task-scheduler/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-146",
+      "url": "https://leetcode.com/problems/lru-cache/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-460",
+      "url": "https://leetcode.com/problems/lfu-cache/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-380",
+      "url": "https://leetcode.com/problems/insert-delete-getrandom-o1/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-208",
+      "url": "https://leetcode.com/problems/implement-trie-prefix-tree/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-211",
+      "url": "https://leetcode.com/problems/design-add-and-search-words-data-structure/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-307",
+      "url": "https://leetcode.com/problems/range-sum-query-mutable/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-315",
+      "url": "https://leetcode.com/problems/count-of-smaller-numbers-after-self/",
+      "status": 403,
+      "needsVerification": true
+    },
+    {
+      "id": "lc-435",
+      "url": "https://leetcode.com/problems/non-overlapping-intervals/",
+      "status": 403,
+      "needsVerification": true
+    }
+  ]
+}

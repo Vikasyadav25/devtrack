@@ -1,0 +1,97 @@
+export interface Problem {
+  id: string;
+  slug: string;
+  title: string;
+  platform: string;
+  externalUrl: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  patternSlugs: string[];
+  sequenceIndex: number;
+  whySelected: string;
+  hint1: string;
+  hint2: string;
+  approachSummary: string;
+  constraintsSummary: string;
+  edgeCases: string[];
+  commonErrors: string[];
+  revisionPrompts: string[];
+  status: 'published' | 'draft';
+  updatedAt: string;
+  needsVerification: boolean;
+}
+export interface Pattern {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  prerequisiteSlugs: string[];
+  recognitionClues: string[];
+  coreIdea: string;
+  explanationMd: string;
+  invariants: string[];
+  whenNotToUse: string[];
+  javaTemplate: string;
+  workedExample: string;
+  dryRunSteps: string[];
+  timeComplexity: string;
+  spaceComplexity: string;
+  commonMistakes: string[];
+  variants: string[];
+  practiceProblemIds: string[];
+  interviewFollowups: string[];
+  sourceLinks: string[];
+  estimatedMinutes: number;
+  status: 'published' | 'draft';
+  updatedAt: string;
+}
+export interface Lesson {
+  slug: string;
+  domain: 'java' | 'backend' | 'cs' | 'lld' | 'hld';
+  module: string;
+  title: string;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  prerequisites: string[];
+  learningObjectives: string[];
+  explanationMd: string;
+  mentalModel: string;
+  javaExamples: { code: string; expectedOutput: string; explanation: string }[];
+  internals: string;
+  pitfalls: string[];
+  realWorldUse: string;
+  interviewQA: { question: string; shortAnswer: string; deepAnswer: string; followups: string[] }[];
+  quiz: { question: string; answer: string }[];
+  practiceTasks: string[];
+  references: string[];
+  readingMinutes: number;
+  status: 'published' | 'draft';
+  updatedAt: string;
+}
+export interface DesignCase {
+  slug: string;
+  kind: 'HLD' | 'LLD';
+  title: string;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  prompt: string;
+  clarifyingQuestions: string[];
+  functionalRequirements: string[];
+  nonFunctionalRequirements: string[];
+  outOfScope: string[];
+  entities: string[];
+  apiContracts: string[];
+  dataModel: string;
+  mermaidDiagrams: string[];
+  baselineDesign: string;
+  tradeoffs: string[];
+  failureModes: string[];
+  scalingOptions: string[];
+  capacityEstimation: string;
+  javaSkeleton: string;
+  concurrencyConcerns: string[];
+  testingStrategy: string[];
+  followupQuestions: string[];
+  evaluationRubric: string;
+  references: string[];
+  status: 'published' | 'draft';
+  updatedAt: string;
+}

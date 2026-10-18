@@ -1,0 +1,1523 @@
+[
+  {
+    "slug": "value-and-reference-semantics",
+    "domain": "java",
+    "module": "Language foundations",
+    "title": "Values, references & parameter passing",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "Only the reference value was copied; the parameter is a separate local variable.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nA Java variable always holds a value. For a primitive, that value is the primitive itself. For an object variable, it is a reference value. Method invocation copies that value into a new parameter variable. Reassigning the parameter cannot reassign the caller's variable. Mutating the shared object can still be observed through both references. These are separate operations, which is why describing Java as passing objects by reference causes confusion.\n\n## Follow the mechanism\n\nThe heap object and the local reference occupy different conceptual roles. A method can receive a copied address-like reference, follow it and modify a field, yet replacing its parameter only changes the local copy. Do not depend on an actual memory-address representation: the JVM is free to move objects during collection. Alias reasoning is the useful model. Two variables may refer to the same mutable object, and that shared identity makes mutation visible.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nThe mutation changes the original array object, while the later reassignment directs only the local parameter toward a new array. The caller keeps its original reference. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nPredict a method that swaps two object parameters, then fix it by returning a pair. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nDraw two boxes for the caller variable and method parameter, then draw both arrows to one array object. The assignment inside change redirects only the parameter arrow. This diagram also explains why returning a replacement array works: the caller can explicitly assign the returned reference. It does not require any special pass-by-reference behavior from Java.",
+    "mentalModel": "A Java variable always holds a value.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        int[] a = {1};\n        change(a);\n        System.out.println(a[0]);\n    }\n    static void change(int[] copy) { copy[0] = 7; copy = new int[]{9}; }\n}\n",
+        "expectedOutput": "7",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "The heap object and the local reference occupy different conceptual roles. A method can receive a copied address-like reference, follow it and modify a field, yet replacing its parameter only changes the local copy. Do not depend on an actual memory-address representation: the JVM is free to move objects during collection. Alias reasoning is the useful model. Two variables may refer to the same mutable object, and that shared identity makes mutation visible.",
+    "pitfalls": [
+      "Confusing reassignment with mutation",
+      "Assuming final makes an object immutable",
+      "Treating reference identity as value equality"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Why does reassigning an array parameter not replace the caller's array?",
+        "shortAnswer": "Only the reference value was copied; the parameter is a separate local variable.",
+        "deepAnswer": "The mutation changes the original array object, while the later reassignment directs only the local parameter toward a new array. The caller keeps its original reference.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Predict a method that swaps two object parameters, then fix it by returning a pair. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Confusing reassignment with mutation.",
+        "deepAnswer": "The heap object and the local reference occupy different conceptual roles. A method can receive a copied address-like reference, follow it and modify a field, yet replacing its parameter only changes the local copy. Do not depend on an actual memory-address representation: the JVM is free to move objects during collection. Alias reasoning is the useful model. Two variables may refer to the same mutable object, and that shared identity makes mutation visible.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Why does reassigning an array parameter not replace the caller's array?",
+        "answer": "The mutation changes the original array object, while the later reassignment directs only the local parameter toward a new array. The caller keeps its original reference."
+      }
+    ],
+    "practiceTasks": [
+      "Predict a method that swaps two object parameters, then fix it by returning a pair."
+    ],
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "equality-and-hashing",
+    "domain": "java",
+    "module": "Object contracts",
+    "title": "Equality, hashCode & collection keys",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "Yes. Collisions are legal; equals resolves them.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nIdentity asks whether two references designate the same object. Logical equality asks whether they represent the same value. Hash-based collections use hashCode to narrow the candidate bucket, then equality to distinguish keys. Equal objects must have equal hashes; unequal objects may collide. A hash is therefore not a unique identifier and must never replace an equality comparison.\n\n## Follow the mechanism\n\nA key inserted into a hash map is located using the hash it had at insertion. If equality-relevant state changes, later lookups may compute a different bucket and fail. A record with immutable component values is a convenient value key, but a record containing a mutable list is only shallowly immutable. Pick key fields that remain stable and match the domain's definition of identity.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nThe contract only requires equal values to share a hash. A constant hash is functionally legal but degrades distribution and lookup performance. A mutable key may violate lookup assumptions even with a good hash function. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nCreate an immutable coordinate key and test two independently constructed equal coordinates. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nDecide whether the domain key is an external ID or a collection of attributes. Two customer records with the same display name are not necessarily the same customer. Conversely, two independently loaded coordinate values can be logically equal. Equality should reflect that domain decision consistently across maps, sets and tests, rather than whatever fields were easiest to compare.",
+    "mentalModel": "Identity asks whether two references designate the same object.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var map = new java.util.HashMap<Key, String>();\n        map.put(new Key(\"A\", 2), \"found\");\n        System.out.println(map.get(new Key(\"A\", 2)));\n    }\n    record Key(String code, int revision) {}\n}\n",
+        "expectedOutput": "found",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "A key inserted into a hash map is located using the hash it had at insertion. If equality-relevant state changes, later lookups may compute a different bucket and fail. A record with immutable component values is a convenient value key, but a record containing a mutable list is only shallowly immutable. Pick key fields that remain stable and match the domain's definition of identity.",
+    "pitfalls": [
+      "Overriding equals without hashCode",
+      "Using mutable keys",
+      "Comparing strings with =="
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Can two unequal objects have the same hash code?",
+        "shortAnswer": "Yes. Collisions are legal; equals resolves them.",
+        "deepAnswer": "The contract only requires equal values to share a hash. A constant hash is functionally legal but degrades distribution and lookup performance. A mutable key may violate lookup assumptions even with a good hash function.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Create an immutable coordinate key and test two independently constructed equal coordinates. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Overriding equals without hashCode.",
+        "deepAnswer": "A key inserted into a hash map is located using the hash it had at insertion. If equality-relevant state changes, later lookups may compute a different bucket and fail. A record with immutable component values is a convenient value key, but a record containing a mutable list is only shallowly immutable. Pick key fields that remain stable and match the domain's definition of identity.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Can two unequal objects have the same hash code?",
+        "answer": "The contract only requires equal values to share a hash. A constant hash is functionally legal but degrades distribution and lookup performance. A mutable key may violate lookup assumptions even with a good hash function."
+      }
+    ],
+    "practiceTasks": [
+      "Create an immutable coordinate key and test two independently constructed equal coordinates."
+    ],
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "immutability-and-defensive-copies",
+    "domain": "java",
+    "module": "Object design",
+    "title": "Immutability & defensive copies",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "No. Its elements can still be mutable.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nImmutability is a property of observable state after construction. A final field prevents reassignment of that field but does not freeze the object it references. An immutable aggregate must prevent outside code from modifying its internal state through aliases. Copy mutable inputs on the way in and avoid returning mutable internal objects on the way out.\n\n## Follow the mechanism\n\nList.copyOf produces an unmodifiable snapshot of the list structure, not a deep copy of each element. If elements themselves are mutable, callers may still change their observable fields. Design the element type as immutable too, or copy elements deliberately. Null-element behavior is part of the copy operation's contract. Safe construction also means not publishing this before the constructor has established all invariants.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nThe wrapper controls structural operations such as add or remove. References to mutable elements remain aliases. Deep immutability requires a recursively immutable object graph or defensive copies of its mutable parts. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nDesign a money value object using currency and integer minor units; document overflow behavior. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nA constructor is a useful trust boundary. Validate the complete value there, and store an immutable representation so later methods can rely on the invariant. This reduces the number of states every consumer must handle. When copying large data, explain the allocation cost and whether an immutable shared representation can safely avoid repeated deep copies.",
+    "mentalModel": "Immutability is a property of observable state after construction.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var source = new java.util.ArrayList<>(java.util.List.of(\"silver\"));\n        var order = new Order(source);\n        source.add(\"gold\");\n        System.out.println(order.items().size());\n    }\n    record Order(java.util.List<String> items) {\n        Order { items = java.util.List.copyOf(items); }\n    }\n}\n",
+        "expectedOutput": "1",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "List.copyOf produces an unmodifiable snapshot of the list structure, not a deep copy of each element. If elements themselves are mutable, callers may still change their observable fields. Design the element type as immutable too, or copy elements deliberately. Null-element behavior is part of the copy operation's contract. Safe construction also means not publishing this before the constructor has established all invariants.",
+    "pitfalls": [
+      "Returning internal arrays",
+      "Confusing final and immutable",
+      "Copying the list but not mutable elements"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Does an unmodifiable list guarantee deep immutability?",
+        "shortAnswer": "No. Its elements can still be mutable.",
+        "deepAnswer": "The wrapper controls structural operations such as add or remove. References to mutable elements remain aliases. Deep immutability requires a recursively immutable object graph or defensive copies of its mutable parts.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Design a money value object using currency and integer minor units; document overflow behavior. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Returning internal arrays.",
+        "deepAnswer": "List.copyOf produces an unmodifiable snapshot of the list structure, not a deep copy of each element. If elements themselves are mutable, callers may still change their observable fields. Design the element type as immutable too, or copy elements deliberately. Null-element behavior is part of the copy operation's contract. Safe construction also means not publishing this before the constructor has established all invariants.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Does an unmodifiable list guarantee deep immutability?",
+        "answer": "The wrapper controls structural operations such as add or remove. References to mutable elements remain aliases. Deep immutability requires a recursively immutable object graph or defensive copies of its mutable parts."
+      }
+    ],
+    "practiceTasks": [
+      "Design a money value object using currency and integer minor units; document overflow behavior."
+    ],
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "collections-and-complexity",
+    "domain": "java",
+    "module": "Collections",
+    "title": "Choose collections by their operations",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "Finding an insertion position may cost linear time.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nCollection choice starts with workload, ordering and identity requirements. ArrayList provides indexed access and amortized constant-time append, but inserting at the front shifts existing elements. ArrayDeque supports queue and stack operations without the per-node allocation of a linked list. A hash set offers expected membership lookup without ordering. A tree set adds sorted navigation with logarithmic operations.\n\n## Follow the mechanism\n\nAsymptotic cost is not the only cost. Boxing primitives allocates or reuses wrapper objects, pointer-heavy layouts reduce locality, and resizing may create individual expensive operations even when append is amortized constant time. A LinkedList insertion is constant time only after locating the node; getting to an index requires traversal. Benchmarks must measure the actual operation mix and data sizes.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nThe constant-time link operation excludes traversal and allocation costs. ArrayList can outperform a linked list for many real workloads because its contiguous reference storage improves locality. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nImplement a bounded recent-history buffer using ArrayDeque and test its eviction order. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nSeparate the interface from the implementation in method signatures, but do not erase performance assumptions from documentation. Accepting a List and repeatedly calling get(i) can become quadratic for a linked implementation. Iteration communicates sequential access clearly. If an algorithm truly requires random access, either state that contract or copy into an appropriate representation before the main loop.",
+    "mentalModel": "Collection choice starts with workload, ordering and identity requirements.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        java.util.Deque<String> queue = new java.util.ArrayDeque<>();\n        queue.addLast(\"first\");\n        queue.addLast(\"second\");\n        System.out.println(queue.removeFirst());\n        System.out.println(queue.peekFirst());\n    }\n}\n",
+        "expectedOutput": "first\nsecond",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "Asymptotic cost is not the only cost. Boxing primitives allocates or reuses wrapper objects, pointer-heavy layouts reduce locality, and resizing may create individual expensive operations even when append is amortized constant time. A LinkedList insertion is constant time only after locating the node; getting to an index requires traversal. Benchmarks must measure the actual operation mix and data sizes.",
+    "pitfalls": [
+      "Ignoring traversal cost",
+      "Assuming HashMap iteration order",
+      "Using null elements with ArrayDeque"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Why is LinkedList not automatically better for frequent insertions?",
+        "shortAnswer": "Finding an insertion position may cost linear time.",
+        "deepAnswer": "The constant-time link operation excludes traversal and allocation costs. ArrayList can outperform a linked list for many real workloads because its contiguous reference storage improves locality.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Implement a bounded recent-history buffer using ArrayDeque and test its eviction order. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Ignoring traversal cost.",
+        "deepAnswer": "Asymptotic cost is not the only cost. Boxing primitives allocates or reuses wrapper objects, pointer-heavy layouts reduce locality, and resizing may create individual expensive operations even when append is amortized constant time. A LinkedList insertion is constant time only after locating the node; getting to an index requires traversal. Benchmarks must measure the actual operation mix and data sizes.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Why is LinkedList not automatically better for frequent insertions?",
+        "answer": "The constant-time link operation excludes traversal and allocation costs. ArrayList can outperform a linked list for many real workloads because its contiguous reference storage improves locality."
+      }
+    ],
+    "practiceTasks": [
+      "Implement a bounded recent-history buffer using ArrayDeque and test its eviction order."
+    ],
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "generics-and-variance",
+    "domain": "java",
+    "module": "Type system",
+    "title": "Generics, invariance & PECS",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "Its unknown element type could be Integer.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nA List<Integer> is not a subtype of List<Number>. If it were, another caller could insert a Double into an integer-only list. Wildcards express what a method needs rather than changing that rule. A producer of values can use extends; a consumer of values can use super. Read the bounds from the point of view of the method using the collection.\n\n## Follow the mechanism\n\nA List<? extends Number> lets you read elements as Number, but you cannot safely add an arbitrary Number because the unknown concrete element type might be Integer. A List<? super Integer> accepts Integer values but only guarantees Object on reading. Generic types are largely erased at runtime, so do not expect to inspect a list's element type through getClass.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nThe bound guarantees a safe read type, not a safe arbitrary write type. A method that needs to insert integers can accept List<? super Integer> instead. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nWrite copy(List<? extends T> source, List<? super T> target) without raw types. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nType parameters capture a relationship between inputs and outputs. A wildcard is useful when only one side of that relationship matters. If a method needs to return the same type it reads from an input, a named type variable often expresses the relationship more clearly. Never silence an unchecked cast without documenting and enforcing the invariant that makes it safe.",
+    "mentalModel": "A List<Integer> is not a subtype of List<Number>.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        java.util.List<Integer> input = java.util.List.of(2, 3);\n        System.out.println(total(input));\n    }\n    static double total(java.util.List<? extends Number> input) {\n        double sum = 0;\n        for (Number n : input) sum += n.doubleValue();\n        return sum;\n    }\n}\n",
+        "expectedOutput": "5.0",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "A List<? extends Number> lets you read elements as Number, but you cannot safely add an arbitrary Number because the unknown concrete element type might be Integer. A List<? super Integer> accepts Integer values but only guarantees Object on reading. Generic types are largely erased at runtime, so do not expect to inspect a list's element type through getClass.",
+    "pitfalls": [
+      "Using raw collections",
+      "Treating extends as writable covariance",
+      "Assuming generic parameters survive erasure"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Why can you not add a Double to List<? extends Number>?",
+        "shortAnswer": "Its unknown element type could be Integer.",
+        "deepAnswer": "The bound guarantees a safe read type, not a safe arbitrary write type. A method that needs to insert integers can accept List<? super Integer> instead.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Write copy(List<? extends T> source, List<? super T> target) without raw types. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Using raw collections.",
+        "deepAnswer": "A List<? extends Number> lets you read elements as Number, but you cannot safely add an arbitrary Number because the unknown concrete element type might be Integer. A List<? super Integer> accepts Integer values but only guarantees Object on reading. Generic types are largely erased at runtime, so do not expect to inspect a list's element type through getClass.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Why can you not add a Double to List<? extends Number>?",
+        "answer": "The bound guarantees a safe read type, not a safe arbitrary write type. A method that needs to insert integers can accept List<? super Integer> instead."
+      }
+    ],
+    "practiceTasks": [
+      "Write copy(List<? extends T> source, List<? super T> target) without raw types."
+    ],
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "exceptions-and-resource-safety",
+    "domain": "java",
+    "module": "Error handling",
+    "title": "Exceptions & resource ownership",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "The close failure is suppressed on the body exception.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nAn exception communicates failure through a separate control path. Catch it where you can recover, translate it into a useful abstraction or add actionable context. Catching Exception and continuing may convert a visible failure into corrupted state. Resources such as streams and connections also require deterministic ownership independent of whether an operation succeeds.\n\n## Follow the mechanism\n\nTry-with-resources closes AutoCloseable resources in reverse declaration order. If both the body and close fail, the body's exception remains primary and close failures are attached as suppressed exceptions. This preserves the original failure while retaining cleanup evidence. A finally block that throws can instead hide the original error, so avoid ad hoc cleanup that replaces useful diagnostics.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nThis keeps the operation failure primary while preserving cleanup information through getSuppressed. Logging only a message may lose that exception chain and the useful context it carries. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nBuild an AutoCloseable test resource that throws on close and inspect getSuppressed. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nException translation should preserve the original cause. A repository can expose a storage-specific failure while retaining the driver exception for diagnostics, without leaking SQL details to an HTTP client. Classify failures by whether the caller can correct an input, retry safely or contact an operator. Logging at every layer can duplicate the same event and obscure the actual recovery boundary.",
+    "mentalModel": "An exception communicates failure through a separate control path.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        try (var input = new java.io.ByteArrayInputStream(new byte[]{65})) {\n            System.out.println(input.read());\n        }\n    }\n}\n",
+        "expectedOutput": "65",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "Try-with-resources closes AutoCloseable resources in reverse declaration order. If both the body and close fail, the body's exception remains primary and close failures are attached as suppressed exceptions. This preserves the original failure while retaining cleanup evidence. A finally block that throws can instead hide the original error, so avoid ad hoc cleanup that replaces useful diagnostics.",
+    "pitfalls": [
+      "Swallowing exceptions",
+      "Throwing from finally",
+      "Leaking resources across unclear ownership boundaries"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "What happens when the body and close both throw?",
+        "shortAnswer": "The close failure is suppressed on the body exception.",
+        "deepAnswer": "This keeps the operation failure primary while preserving cleanup information through getSuppressed. Logging only a message may lose that exception chain and the useful context it carries.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Build an AutoCloseable test resource that throws on close and inspect getSuppressed. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Swallowing exceptions.",
+        "deepAnswer": "Try-with-resources closes AutoCloseable resources in reverse declaration order. If both the body and close fail, the body's exception remains primary and close failures are attached as suppressed exceptions. This preserves the original failure while retaining cleanup evidence. A finally block that throws can instead hide the original error, so avoid ad hoc cleanup that replaces useful diagnostics.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "What happens when the body and close both throw?",
+        "answer": "This keeps the operation failure primary while preserving cleanup information through getSuppressed. Logging only a message may lose that exception chain and the useful context it carries."
+      }
+    ],
+    "practiceTasks": [
+      "Build an AutoCloseable test resource that throws on close and inspect getSuppressed."
+    ],
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "comparator-contracts",
+    "domain": "java",
+    "module": "Collections",
+    "title": "Comparators & deterministic ordering",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "Overflow can produce the wrong sign.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nA comparator defines an ordering relation, not a subtraction formula. Returning a minus b can overflow and reverse the ordering of extreme integers. Use Integer.compare or the Comparator factories. Decide how ties are resolved and whether null values are allowed. Deterministic tie-breaking makes pagination, tests and user interfaces easier to reason about.\n\n## Follow the mechanism\n\nSorted sets use comparator equality to decide whether an element is already present. If a comparator only compares salary, two distinct employees with the same salary may collapse into one element. Add a stable identity tie-breaker when the set should retain both. Sorting stability preserves the relative order of elements comparing equal; it does not repair an inconsistent comparator.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nA comparator must remain transitive and antisymmetric in sign. Arithmetic overflow can violate those expectations, while Integer.compare handles boundary values directly. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nSort employee records by department, descending pay and ascending unique ID. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nTest an ordering with equal primary fields, extreme numeric values and three values that exercise transitivity. A sorted result on one happy-path list is weak evidence. For a TreeSet, explicitly test whether two domain-distinct objects remain present after insertion. This reveals comparator equality problems that a simple sorting test would never expose because sorting does not remove equal elements.",
+    "mentalModel": "A comparator defines an ordering relation, not a subtraction formula.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var names = new java.util.ArrayList<>(java.util.List.of(\"bbb\", \"a\", \"cc\"));\n        names.sort(java.util.Comparator.comparingInt(String::length).thenComparing(java.util.Comparator.naturalOrder()));\n        System.out.println(names);\n    }\n}\n",
+        "expectedOutput": "[a, cc, bbb]",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "Sorted sets use comparator equality to decide whether an element is already present. If a comparator only compares salary, two distinct employees with the same salary may collapse into one element. Add a stable identity tie-breaker when the set should retain both. Sorting stability preserves the relative order of elements comparing equal; it does not repair an inconsistent comparator.",
+    "pitfalls": [
+      "Subtracting integer keys",
+      "Forgetting stable tie-breakers",
+      "Mutating fields while objects are in a TreeSet"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Why is subtraction unsafe inside an integer comparator?",
+        "shortAnswer": "Overflow can produce the wrong sign.",
+        "deepAnswer": "A comparator must remain transitive and antisymmetric in sign. Arithmetic overflow can violate those expectations, while Integer.compare handles boundary values directly.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Sort employee records by department, descending pay and ascending unique ID. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Subtracting integer keys.",
+        "deepAnswer": "Sorted sets use comparator equality to decide whether an element is already present. If a comparator only compares salary, two distinct employees with the same salary may collapse into one element. Add a stable identity tie-breaker when the set should retain both. Sorting stability preserves the relative order of elements comparing equal; it does not repair an inconsistent comparator.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Why is subtraction unsafe inside an integer comparator?",
+        "answer": "A comparator must remain transitive and antisymmetric in sign. Arithmetic overflow can violate those expectations, while Integer.compare handles boundary values directly."
+      }
+    ],
+    "practiceTasks": [
+      "Sort employee records by department, descending pay and ascending unique ID."
+    ],
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "streams-and-laziness",
+    "domain": "java",
+    "module": "Functional Java",
+    "title": "Streams, laziness & side effects",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "Lazy or parallel execution can change when and how it runs.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nA stream describes a pipeline of transformations over a source. Intermediate operations are lazy and usually execute only when a terminal operation requests elements. This permits fusion and short-circuiting, but it makes side effects inside map or peek unreliable as application logic. The intended result should be expressed as a value returned by the pipeline.\n\n## Follow the mechanism\n\nA stream is single-use. Reusing it after a terminal operation is invalid even if the source collection remains available. Parallel streams introduce additional constraints: a reduction must have an associative combining operation, and shared mutable side effects need synchronization that often defeats the benefit. Ordered results and encounter order should be specified explicitly rather than inferred from thread scheduling.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nUse map to transform elements and collect the returned values. A shared list modified from parallel callbacks can race, lose updates and produce nondeterministic ordering. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nGroup orders by customer using groupingBy and compute total minor-unit amounts. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nChoose a loop when control flow, early exit or checked failure handling becomes clearer that way. Functional syntax is not a performance guarantee. A stream over a tiny list can be excellent for expressing a transformation, while a CPU-heavy parallel reduction needs measurement and a valid associative combiner. Readability and the actual workload determine the appropriate abstraction.",
+    "mentalModel": "A stream describes a pipeline of transformations over a source.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var result = java.util.List.of(1, 2, 3, 4).stream()\n            .filter(n -> n % 2 == 0)\n            .map(n -> n * n)\n            .toList();\n        System.out.println(result);\n    }\n}\n",
+        "expectedOutput": "[4, 16]",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "A stream is single-use. Reusing it after a terminal operation is invalid even if the source collection remains available. Parallel streams introduce additional constraints: a reduction must have an associative combining operation, and shared mutable side effects need synchronization that often defeats the benefit. Ordered results and encounter order should be specified explicitly rather than inferred from thread scheduling.",
+    "pitfalls": [
+      "Reusing consumed streams",
+      "Depending on peek side effects",
+      "Using parallel streams for blocking I/O without measurement"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Why should a stream map function avoid shared mutation?",
+        "shortAnswer": "Lazy or parallel execution can change when and how it runs.",
+        "deepAnswer": "Use map to transform elements and collect the returned values. A shared list modified from parallel callbacks can race, lose updates and produce nondeterministic ordering.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Group orders by customer using groupingBy and compute total minor-unit amounts. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Reusing consumed streams.",
+        "deepAnswer": "A stream is single-use. Reusing it after a terminal operation is invalid even if the source collection remains available. Parallel streams introduce additional constraints: a reduction must have an associative combining operation, and shared mutable side effects need synchronization that often defeats the benefit. Ordered results and encounter order should be specified explicitly rather than inferred from thread scheduling.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Why should a stream map function avoid shared mutation?",
+        "answer": "Use map to transform elements and collect the returned values. A shared list modified from parallel callbacks can race, lose updates and produce nondeterministic ordering."
+      }
+    ],
+    "practiceTasks": [
+      "Group orders by customer using groupingBy and compute total minor-unit amounts."
+    ],
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "optional-and-nullability",
+    "domain": "java",
+    "module": "API design",
+    "title": "Optional & explicit absence",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "The supplier in orElseGet is lazy.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nOptional makes the absence of a return value visible in a method signature. It does not remove the need to define why absence occurs, and it should not turn operational errors into empty results. A missing customer can be a normal outcome; a database timeout is a failure requiring a different signal. These cases should remain distinguishable to callers.\n\n## Follow the mechanism\n\norElse evaluates its argument eagerly because Java evaluates arguments before invoking a method. orElseGet invokes a supplier only when the optional is empty. This matters when fallback construction is expensive or has side effects. Calling get without checking presence recreates the same hidden failure mode as dereferencing an unknown nullable value.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nA precomputed value passed to orElse already exists by the time the method is called. A supplier passed to orElseGet can defer costly fallback work until it is actually needed. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nDesign findById to distinguish not-found from storage failure and document the contract. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nAbsence is part of an API vocabulary. A lookup may return empty because a key does not exist, while a parser may need a structured error describing the invalid position. Using one empty value for every failure loses information needed for recovery. Decide which outcomes callers must distinguish before choosing Optional, a result type or an exception.",
+    "mentalModel": "Optional makes the absence of a return value visible in a method signature.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var name = java.util.Optional.of(\"Ada\");\n        System.out.println(name.map(String::toUpperCase).orElse(\"UNKNOWN\"));\n        System.out.println(java.util.Optional.empty().orElse(\"missing\"));\n    }\n}\n",
+        "expectedOutput": "ADA\nmissing",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "orElse evaluates its argument eagerly because Java evaluates arguments before invoking a method. orElseGet invokes a supplier only when the optional is empty. This matters when fallback construction is expensive or has side effects. Calling get without checking presence recreates the same hidden failure mode as dereferencing an unknown nullable value.",
+    "pitfalls": [
+      "Returning null instead of Optional.empty",
+      "Using get without a presence guarantee",
+      "Representing infrastructure failure as absence"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "When do orElse and orElseGet behave differently?",
+        "shortAnswer": "The supplier in orElseGet is lazy.",
+        "deepAnswer": "A precomputed value passed to orElse already exists by the time the method is called. A supplier passed to orElseGet can defer costly fallback work until it is actually needed.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Design findById to distinguish not-found from storage failure and document the contract. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Returning null instead of Optional.empty.",
+        "deepAnswer": "orElse evaluates its argument eagerly because Java evaluates arguments before invoking a method. orElseGet invokes a supplier only when the optional is empty. This matters when fallback construction is expensive or has side effects. Calling get without checking presence recreates the same hidden failure mode as dereferencing an unknown nullable value.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "When do orElse and orElseGet behave differently?",
+        "answer": "A precomputed value passed to orElse already exists by the time the method is called. A supplier passed to orElseGet can defer costly fallback work until it is actually needed."
+      }
+    ],
+    "practiceTasks": [
+      "Design findById to distinguish not-found from storage failure and document the contract."
+    ],
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "java-memory-model",
+    "domain": "java",
+    "module": "Concurrency",
+    "title": "Visibility, atomicity & happens-before",
+    "level": "intermediate",
+    "prerequisites": [],
+    "learningObjectives": [
+      "No. The compound read-modify-write can still race.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nConcurrent correctness requires both visibility and atomicity. Visibility determines when one thread's writes become observable to another. Atomicity determines whether an operation can be interleaved. A volatile counter makes reads and writes visible, but increment still consists of a read, an addition and a write. Two threads can read the same old value and overwrite one another's increment.\n\n## Follow the mechanism\n\nA happens-before relation provides ordering and visibility guarantees. Monitor unlock happens-before a later lock of the same monitor; a volatile write happens-before a subsequent read of that variable. AtomicInteger supplies atomic read-modify-write operations. It does not make a larger transaction across multiple variables automatically atomic. Identify the invariant first, then choose synchronization around the entire invariant.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nUse an atomic increment for an isolated counter or a lock for a compound invariant involving several fields. The appropriate boundary depends on the state relationship being protected. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nBuild a two-account transfer and show why two independent atomic balances do not make the transfer atomic. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nIdentify the shared data and the exact synchronization edge for every read. Joining a worker establishes visibility of its completed actions to the joining thread, which is why the example reads the final counter after both joins. Removing those joins changes the question from final count to an intermediate observation. Timing and visibility are related concerns, but they are not interchangeable guarantees.",
+    "mentalModel": "Concurrent correctness requires both visibility and atomicity.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var count = new java.util.concurrent.atomic.AtomicInteger();\n        Thread a = new Thread(() -> { for (int i=0;i<1000;i++) count.incrementAndGet(); });\n        Thread b = new Thread(() -> { for (int i=0;i<1000;i++) count.incrementAndGet(); });\n        a.start(); b.start(); a.join(); b.join();\n        System.out.println(count.get());\n    }\n}\n",
+        "expectedOutput": "2000",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "A happens-before relation provides ordering and visibility guarantees. Monitor unlock happens-before a later lock of the same monitor; a volatile write happens-before a subsequent read of that variable. AtomicInteger supplies atomic read-modify-write operations. It does not make a larger transaction across multiple variables automatically atomic. Identify the invariant first, then choose synchronization around the entire invariant.",
+    "pitfalls": [
+      "Using volatile as a lock",
+      "Synchronizing on different monitors",
+      "Reading shared state outside the protecting protocol"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Does volatile make count++ atomic?",
+        "shortAnswer": "No. The compound read-modify-write can still race.",
+        "deepAnswer": "Use an atomic increment for an isolated counter or a lock for a compound invariant involving several fields. The appropriate boundary depends on the state relationship being protected.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Build a two-account transfer and show why two independent atomic balances do not make the transfer atomic. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Using volatile as a lock.",
+        "deepAnswer": "A happens-before relation provides ordering and visibility guarantees. Monitor unlock happens-before a later lock of the same monitor; a volatile write happens-before a subsequent read of that variable. AtomicInteger supplies atomic read-modify-write operations. It does not make a larger transaction across multiple variables automatically atomic. Identify the invariant first, then choose synchronization around the entire invariant.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Does volatile make count++ atomic?",
+        "answer": "Use an atomic increment for an isolated counter or a lock for a compound invariant involving several fields. The appropriate boundary depends on the state relationship being protected."
+      }
+    ],
+    "practiceTasks": [
+      "Build a two-account transfer and show why two independent atomic balances do not make the transfer atomic."
+    ],
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "executors-and-shutdown",
+    "domain": "java",
+    "module": "Concurrency",
+    "title": "Executors, bounded work & shutdown",
+    "level": "intermediate",
+    "prerequisites": [],
+    "learningObjectives": [
+      "It converts overload into growing memory usage and waiting time.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nAn executor separates submission from thread management. A task queue is still a resource budget: accepting work faster than it can finish creates growing memory use and latency. Choose a bounded queue and a rejection policy deliberately for production services. More threads do not make a saturated database or CPU faster, and an unbounded queue can hide overload until the process fails.\n\n## Follow the mechanism\n\nFuture.get returns a result or reports failure, and it may block. Cancellation is cooperative: interrupting a task does not forcibly terminate arbitrary code. Tasks should observe interruption and propagate it appropriately. Shutdown stops accepting new tasks; awaitTermination gives already accepted tasks time to finish. Application ownership must identify who closes the executor and what happens during deployment termination.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nA bounded queue makes overload visible. The rejection or caller-runs policy then becomes part of the service contract, together with timeouts and upstream backpressure. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nCreate a one-thread executor with a queue capacity of two and demonstrate its rejection behavior. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nThread-pool sizing belongs to the capacity model. A CPU-bound pool competes for cores, while blocking work spends time waiting on other systems. Increasing concurrency beyond a downstream connection limit simply moves the queue. Measure active tasks, queue age, rejected submissions and downstream latency together. A healthy average execution time can hide an unhealthy amount of waiting before execution begins.",
+    "mentalModel": "An executor separates submission from thread management.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var pool = java.util.concurrent.Executors.newFixedThreadPool(2);\n        try {\n            var answer = pool.submit(() -> 21 * 2);\n            System.out.println(answer.get());\n        } finally { pool.shutdown(); }\n    }\n}\n",
+        "expectedOutput": "42",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "Future.get returns a result or reports failure, and it may block. Cancellation is cooperative: interrupting a task does not forcibly terminate arbitrary code. Tasks should observe interruption and propagate it appropriately. Shutdown stops accepting new tasks; awaitTermination gives already accepted tasks time to finish. Application ownership must identify who closes the executor and what happens during deployment termination.",
+    "pitfalls": [
+      "Ignoring submitted task failures",
+      "Forgetting shutdown",
+      "Treating cancellation as guaranteed termination"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Why can an unbounded task queue be dangerous?",
+        "shortAnswer": "It converts overload into growing memory usage and waiting time.",
+        "deepAnswer": "A bounded queue makes overload visible. The rejection or caller-runs policy then becomes part of the service contract, together with timeouts and upstream backpressure.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Create a one-thread executor with a queue capacity of two and demonstrate its rejection behavior. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Ignoring submitted task failures.",
+        "deepAnswer": "Future.get returns a result or reports failure, and it may block. Cancellation is cooperative: interrupting a task does not forcibly terminate arbitrary code. Tasks should observe interruption and propagate it appropriately. Shutdown stops accepting new tasks; awaitTermination gives already accepted tasks time to finish. Application ownership must identify who closes the executor and what happens during deployment termination.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Why can an unbounded task queue be dangerous?",
+        "answer": "A bounded queue makes overload visible. The rejection or caller-runs policy then becomes part of the service contract, together with timeouts and upstream backpressure."
+      }
+    ],
+    "practiceTasks": [
+      "Create a one-thread executor with a queue capacity of two and demonstrate its rejection behavior."
+    ],
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "records-and-value-models",
+    "domain": "java",
+    "module": "Modern Java",
+    "title": "Records & value-oriented models",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "No. Their referenced component objects may be mutable.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nA record declares a transparent carrier for a fixed set of component values. The compiler supplies accessors, construction support and value-based equals, hashCode and toString. Records work well for DTOs and value objects whose identity is their component state. They are less suitable when an object's identity or lifecycle must be independent of changing attributes.\n\n## Follow the mechanism\n\nA compact constructor can validate and normalize components before assignment. Records are shallowly immutable: a list component can still contain mutable objects or be mutated by an alias unless copied. Generated equality follows component equality, so a mutable component can also affect hash-key stability. Keep domain invariants in construction rather than hoping every caller remembers to validate.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nThe component fields cannot be reassigned, but the reachable graph may still change. Use immutable component types and defensive copies when the domain requires true immutability. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nImplement a validated page request record with nonnegative offset and a capped positive limit. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nUse the compact constructor to normalize representations only when normalization is part of the domain contract. Uppercasing a currency code is different from silently changing an identifier whose case is meaningful. A value model should reject impossible states and preserve information that callers rely on. Records reduce boilerplate, but they do not make these modeling decisions automatically.",
+    "mentalModel": "A record declares a transparent carrier for a fixed set of component values.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        System.out.println(new Money(1250, \"INR\"));\n    }\n    record Money(long minorUnits, String currency) {\n        Money {\n            if (minorUnits < 0) throw new IllegalArgumentException(\"negative amount\");\n            java.util.Objects.requireNonNull(currency);\n        }\n    }\n}\n",
+        "expectedOutput": "Money[minorUnits=1250, currency=INR]",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "A compact constructor can validate and normalize components before assignment. Records are shallowly immutable: a list component can still contain mutable objects or be mutated by an alias unless copied. Generated equality follows component equality, so a mutable component can also affect hash-key stability. Keep domain invariants in construction rather than hoping every caller remembers to validate.",
+    "pitfalls": [
+      "Assuming deep immutability",
+      "Using floating point for money",
+      "Allowing invalid components through construction"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Are record instances deeply immutable?",
+        "shortAnswer": "No. Their referenced component objects may be mutable.",
+        "deepAnswer": "The component fields cannot be reassigned, but the reachable graph may still change. Use immutable component types and defensive copies when the domain requires true immutability.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Implement a validated page request record with nonnegative offset and a capped positive limit. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Assuming deep immutability.",
+        "deepAnswer": "A compact constructor can validate and normalize components before assignment. Records are shallowly immutable: a list component can still contain mutable objects or be mutated by an alias unless copied. Generated equality follows component equality, so a mutable component can also affect hash-key stability. Keep domain invariants in construction rather than hoping every caller remembers to validate.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Are record instances deeply immutable?",
+        "answer": "The component fields cannot be reassigned, but the reachable graph may still change. Use immutable component types and defensive copies when the domain requires true immutability."
+      }
+    ],
+    "practiceTasks": [
+      "Implement a validated page request record with nonnegative offset and a capped positive limit."
+    ],
+    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "dependency-injection",
+    "domain": "backend",
+    "module": "Service architecture",
+    "title": "Dependency injection without magic",
+    "level": "intermediate",
+    "prerequisites": [],
+    "learningObjectives": [
+      "The test can provide a controlled collaborator directly.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nDependency injection means supplying an object's collaborators from outside rather than constructing them inside business methods. The important benefit is explicit dependency ownership, not annotation syntax. Constructor injection makes required dependencies visible and enables an application composition root to choose concrete implementations. Unit tests can supply a small deterministic collaborator without starting the entire application.\n\n## Follow the mechanism\n\nA Spring container automates construction and lifecycle management, but it does not change the dependency graph's design responsibilities. Circular dependencies often reveal mixed responsibilities. A singleton service must also be safe for concurrent requests: injecting a collaborator does not make shared mutable fields thread-safe. Keep request-specific data in method parameters or appropriately scoped objects.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nThe unit under test is independent of global lookup and framework startup. The production composition root can still use Spring constructor injection to wire the same contract. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nExtract a repository interface from a service and test the service with an in-memory implementation. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nKeep construction in a composition root and business decisions in services. When a test requires many unrelated mocks, the service may have too many responsibilities. An interface is useful at a meaningful boundary, such as storage or an external provider; creating one for every class without variation adds navigation cost without improving isolation. Use the smallest boundary that makes ownership and testing clear.",
+    "mentalModel": "Dependency injection means supplying an object's collaborators from outside rather than constructing them inside business methods.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var service = new Welcome(name -> \"Hello \" + name);\n        System.out.println(service.greet(\"Ada\"));\n    }\n    interface Greeting { String apply(String name); }\n    record Welcome(Greeting greeting) {\n        String greet(String name) { return greeting.apply(name); }\n    }\n}\n",
+        "expectedOutput": "Hello Ada",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "A Spring container automates construction and lifecycle management, but it does not change the dependency graph's design responsibilities. Circular dependencies often reveal mixed responsibilities. A singleton service must also be safe for concurrent requests: injecting a collaborator does not make shared mutable fields thread-safe. Keep request-specific data in method parameters or appropriately scoped objects.",
+    "pitfalls": [
+      "Using a service locator inside business logic",
+      "Hiding required dependencies",
+      "Storing request state in a singleton"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "How does constructor injection improve a unit test?",
+        "shortAnswer": "The test can provide a controlled collaborator directly.",
+        "deepAnswer": "The unit under test is independent of global lookup and framework startup. The production composition root can still use Spring constructor injection to wire the same contract.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Extract a repository interface from a service and test the service with an in-memory implementation. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Using a service locator inside business logic.",
+        "deepAnswer": "A Spring container automates construction and lifecycle management, but it does not change the dependency graph's design responsibilities. Circular dependencies often reveal mixed responsibilities. A singleton service must also be safe for concurrent requests: injecting a collaborator does not make shared mutable fields thread-safe. Keep request-specific data in method parameters or appropriately scoped objects.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "How does constructor injection improve a unit test?",
+        "answer": "The unit under test is independent of global lookup and framework startup. The production composition root can still use Spring constructor injection to wire the same contract."
+      }
+    ],
+    "practiceTasks": [
+      "Extract a repository interface from a service and test the service with an in-memory implementation."
+    ],
+    "references": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/",
+      "https://docs.spring.io/spring-framework/reference/"
+    ],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "http-idempotency",
+    "domain": "backend",
+    "module": "REST semantics",
+    "title": "Idempotency & duplicate requests",
+    "level": "intermediate",
+    "prerequisites": [],
+    "learningObjectives": [
+      "No. The response may have been lost after commit.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nAn operation is idempotent when repeating it has the same intended effect as applying it once. Network timeouts do not tell a client whether the server committed work. Payment and order creation therefore need a duplicate-handling protocol rather than an assumption that clients send requests exactly once. A caller-supplied idempotency key identifies one logical operation across retries.\n\n## Follow the mechanism\n\nStore the key together with a request fingerprint and committed response. Reuse with a different request body must fail rather than returning an unrelated response. In a database, a unique constraint and the business write should share a transaction. An in-memory map illustrates the lookup contract but cannot provide cross-process persistence or an atomic transaction with an external payment provider.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nThe client must retry with the same logical operation key or query the operation status. The server must preserve the deduplication record for a documented retention period. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nSpecify a create-order endpoint with key scope, body fingerprint, retention and in-flight duplicate behavior. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nThe deduplication record needs a lifecycle. A key retained for one day does not protect a retry made a week later, so document retention and client behavior. In-flight requests also need a response policy: wait, return conflict or expose an operation status. Scope the key to the authenticated owner and operation so another account cannot retrieve someone else's stored response.",
+    "mentalModel": "An operation is idempotent when repeating it has the same intended effect as applying it once.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var results = new java.util.HashMap<String, String>();\n        System.out.println(results.computeIfAbsent(\"request-7\", k -> \"order-42\"));\n        System.out.println(results.computeIfAbsent(\"request-7\", k -> \"order-99\"));\n    }\n}\n",
+        "expectedOutput": "order-42\norder-42",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "Store the key together with a request fingerprint and committed response. Reuse with a different request body must fail rather than returning an unrelated response. In a database, a unique constraint and the business write should share a transaction. An in-memory map illustrates the lookup contract but cannot provide cross-process persistence or an atomic transaction with an external payment provider.",
+    "pitfalls": [
+      "Generating a new key on each retry",
+      "Storing keys without request fingerprints",
+      "Keeping deduplication only in process memory"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Is a timeout proof that a request did not commit?",
+        "shortAnswer": "No. The response may have been lost after commit.",
+        "deepAnswer": "The client must retry with the same logical operation key or query the operation status. The server must preserve the deduplication record for a documented retention period.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Specify a create-order endpoint with key scope, body fingerprint, retention and in-flight duplicate behavior. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Generating a new key on each retry.",
+        "deepAnswer": "Store the key together with a request fingerprint and committed response. Reuse with a different request body must fail rather than returning an unrelated response. In a database, a unique constraint and the business write should share a transaction. An in-memory map illustrates the lookup contract but cannot provide cross-process persistence or an atomic transaction with an external payment provider.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Is a timeout proof that a request did not commit?",
+        "answer": "The client must retry with the same logical operation key or query the operation status. The server must preserve the deduplication record for a documented retention period."
+      }
+    ],
+    "practiceTasks": [
+      "Specify a create-order endpoint with key scope, body fingerprint, retention and in-flight duplicate behavior."
+    ],
+    "references": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/",
+      "https://docs.spring.io/spring-framework/reference/"
+    ],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "transaction-boundaries",
+    "domain": "backend",
+    "module": "Data consistency",
+    "title": "Transactions & aggregate invariants",
+    "level": "intermediate",
+    "prerequisites": [],
+    "learningObjectives": [
+      "Concurrent callers can both pass the check against the same old balance.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nA transaction groups database operations into a unit whose committed state preserves an invariant. For a transfer, checking balance and updating both accounts belong to one consistency boundary. Reading a balance outside that boundary and writing later permits a race. Isolation level, locking and constraints determine which concurrent histories the database can admit.\n\n## Follow the mechanism\n\nThe Java example models an atomic in-process transition with a single monitor; it is not a substitute for a database transaction. In a real service, use an actual transaction manager and parameterized SQL, then test concurrent operations on the target database. External calls do not automatically roll back when a database transaction rolls back. For publish-after-commit messaging, an outbox can record the event in the same database transaction.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nUse conditional updates, appropriate locking and a transaction around all affected rows. A database constraint remains a useful final guard even when the application validates inputs. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nWrite a transfer transaction outline, then identify how deadlocks are avoided through consistent lock ordering. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nA business invariant can span rows even when each row is individually valid. Two doctors independently going off call can leave a shift uncovered under some isolation levels. This is why knowing that a database is ACID is insufficient: describe the anomaly, choose the isolation or locking strategy, and test it on the actual database engine with two coordinated connections.",
+    "mentalModel": "A transaction groups database operations into a unit whose committed state preserves an invariant.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var account = new Account(100);\n        System.out.println(account.withdraw(70));\n        System.out.println(account.withdraw(70));\n    }\n    static final class Account {\n        private long balance;\n        Account(long initial) { balance = initial; }\n        synchronized boolean withdraw(long amount) {\n            if (amount <= 0 || balance < amount) return false;\n            balance -= amount; return true;\n        }\n    }\n}\n",
+        "expectedOutput": "true\nfalse",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "The Java example models an atomic in-process transition with a single monitor; it is not a substitute for a database transaction. In a real service, use an actual transaction manager and parameterized SQL, then test concurrent operations on the target database. External calls do not automatically roll back when a database transaction rolls back. For publish-after-commit messaging, an outbox can record the event in the same database transaction.",
+    "pitfalls": [
+      "Calling a remote API inside a long database lock",
+      "Assuming isolation prevents every anomaly",
+      "Separating validation and mutation"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Why is a read-then-write balance check unsafe without a consistency boundary?",
+        "shortAnswer": "Concurrent callers can both pass the check against the same old balance.",
+        "deepAnswer": "Use conditional updates, appropriate locking and a transaction around all affected rows. A database constraint remains a useful final guard even when the application validates inputs.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Write a transfer transaction outline, then identify how deadlocks are avoided through consistent lock ordering. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Calling a remote API inside a long database lock.",
+        "deepAnswer": "The Java example models an atomic in-process transition with a single monitor; it is not a substitute for a database transaction. In a real service, use an actual transaction manager and parameterized SQL, then test concurrent operations on the target database. External calls do not automatically roll back when a database transaction rolls back. For publish-after-commit messaging, an outbox can record the event in the same database transaction.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Why is a read-then-write balance check unsafe without a consistency boundary?",
+        "answer": "Use conditional updates, appropriate locking and a transaction around all affected rows. A database constraint remains a useful final guard even when the application validates inputs."
+      }
+    ],
+    "practiceTasks": [
+      "Write a transfer transaction outline, then identify how deadlocks are avoided through consistent lock ordering."
+    ],
+    "references": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/",
+      "https://docs.spring.io/spring-framework/reference/"
+    ],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "cache-aside-and-expiry",
+    "domain": "backend",
+    "module": "Caching",
+    "title": "Cache-aside, expiry & stale data",
+    "level": "intermediate",
+    "prerequisites": [],
+    "learningObjectives": [
+      "No. A cached old value can remain until expiry or invalidation.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nCache-aside reads from a cache first and loads from the authoritative store on a miss. The cache is an optimization, so correctness must define how stale values can be tolerated. A TTL bounds residence time but does not guarantee the latest value. Updates can invalidate or refresh entries, and failures between database commit and invalidation create observable stale windows.\n\n## Follow the mechanism\n\nUse an injectable clock to test expiry deterministically. A monotonic clock is suitable for elapsed duration inside one process; wall-clock timestamps are suitable when expiry must be shared across processes with an explicit clock-skew policy. An expired entry must not be returned just because it remains in the underlying map. Concurrent misses may cause a stampede, so production designs often coalesce loads or add TTL jitter.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nChoose the consistency contract explicitly. Read-your-write behavior may need cache bypass, version checks or synchronous invalidation, each with availability and latency costs. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nDesign a cache loader with a fake clock and test exact expiry, missing values and simultaneous misses. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nNegative caching stores a miss to avoid repeated expensive lookups, but it can also hide newly created data. Give negative entries their own short lifetime and invalidate them on creation when practical. Cache keys must include the dimensions that change the result, including tenant and authorization scope. A fast cache hit is a security bug if it returns another owner's data.",
+    "mentalModel": "Cache-aside reads from a cache first and loads from the authoritative store on a miss.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        System.out.println(fresh(\"cached\", 100, 99));\n        System.out.println(fresh(\"cached\", 100, 100));\n    }\n    static String fresh(String value, long expiresAt, long now) {\n        return now < expiresAt ? value : null;\n    }\n}\n",
+        "expectedOutput": "cached\nnull",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "Use an injectable clock to test expiry deterministically. A monotonic clock is suitable for elapsed duration inside one process; wall-clock timestamps are suitable when expiry must be shared across processes with an explicit clock-skew policy. An expired entry must not be returned just because it remains in the underlying map. Concurrent misses may cause a stampede, so production designs often coalesce loads or add TTL jitter.",
+    "pitfalls": [
+      "Treating the cache as the source of truth",
+      "Using real sleeps in expiry tests",
+      "Ignoring stampedes on hot keys"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Does a TTL guarantee read-after-write consistency?",
+        "shortAnswer": "No. A cached old value can remain until expiry or invalidation.",
+        "deepAnswer": "Choose the consistency contract explicitly. Read-your-write behavior may need cache bypass, version checks or synchronous invalidation, each with availability and latency costs.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Design a cache loader with a fake clock and test exact expiry, missing values and simultaneous misses. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Treating the cache as the source of truth.",
+        "deepAnswer": "Use an injectable clock to test expiry deterministically. A monotonic clock is suitable for elapsed duration inside one process; wall-clock timestamps are suitable when expiry must be shared across processes with an explicit clock-skew policy. An expired entry must not be returned just because it remains in the underlying map. Concurrent misses may cause a stampede, so production designs often coalesce loads or add TTL jitter.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Does a TTL guarantee read-after-write consistency?",
+        "answer": "Choose the consistency contract explicitly. Read-your-write behavior may need cache bypass, version checks or synchronous invalidation, each with availability and latency costs."
+      }
+    ],
+    "practiceTasks": [
+      "Design a cache loader with a fake clock and test exact expiry, missing values and simultaneous misses."
+    ],
+    "references": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/",
+      "https://docs.spring.io/spring-framework/reference/"
+    ],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "retry-budgets",
+    "domain": "backend",
+    "module": "Resilience",
+    "title": "Timeouts, retries & bounded amplification",
+    "level": "intermediate",
+    "prerequisites": [],
+    "learningObjectives": [
+      "They add load to an already overloaded dependency.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nRetries can recover transient failures but also multiply load during an outage. A retry policy needs an overall deadline, a maximum attempt count and a classification of retryable failures. Repeating a non-idempotent operation can duplicate side effects. The timeout budget must include queueing, connection setup, request execution and time spent between attempts.\n\n## Follow the mechanism\n\nExponential backoff increases spacing between attempts, while jitter prevents many clients from retrying in synchronized waves. Cap the delay and avoid retrying indefinitely. Nested retries in multiple service layers can amplify one request dramatically: three attempts at each of three layers can cause twenty-seven leaf calls. A system-level retry budget limits this feedback rather than optimizing one client in isolation.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nBound attempts, respect a total deadline and use jitter and load shedding. Retry only when the operation is safe and the failure is plausibly transient. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nAdd an injected random source to the delay function and test capped full-jitter delays without sleeping. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nExpose the final reason for stopping: a permanent failure, exhausted attempt count or exhausted deadline. These outcomes help operators distinguish a dependency outage from an overly aggressive timeout. Count logical requests separately from physical attempts in metrics. Otherwise apparent traffic growth and error rates can be dominated by retry amplification while the original caller volume stays unchanged.",
+    "mentalModel": "Retries can recover transient failures but also multiply load during an outage.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        for (int attempt = 0; attempt < 4; attempt++) {\n            System.out.println(delayMillis(attempt));\n        }\n    }\n    static long delayMillis(int attempt) {\n        if (attempt < 0 || attempt > 20) throw new IllegalArgumentException();\n        return Math.min(2000L, 100L * (1L << attempt));\n    }\n}\n",
+        "expectedOutput": "100\n200\n400\n800",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "Exponential backoff increases spacing between attempts, while jitter prevents many clients from retrying in synchronized waves. Cap the delay and avoid retrying indefinitely. Nested retries in multiple service layers can amplify one request dramatically: three attempts at each of three layers can cause twenty-seven leaf calls. A system-level retry budget limits this feedback rather than optimizing one client in isolation.",
+    "pitfalls": [
+      "Retrying all errors",
+      "Resetting the deadline per attempt",
+      "Multiplying retries across service layers"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Why can retries make an outage worse?",
+        "shortAnswer": "They add load to an already overloaded dependency.",
+        "deepAnswer": "Bound attempts, respect a total deadline and use jitter and load shedding. Retry only when the operation is safe and the failure is plausibly transient.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Add an injected random source to the delay function and test capped full-jitter delays without sleeping. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Retrying all errors.",
+        "deepAnswer": "Exponential backoff increases spacing between attempts, while jitter prevents many clients from retrying in synchronized waves. Cap the delay and avoid retrying indefinitely. Nested retries in multiple service layers can amplify one request dramatically: three attempts at each of three layers can cause twenty-seven leaf calls. A system-level retry budget limits this feedback rather than optimizing one client in isolation.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Why can retries make an outage worse?",
+        "answer": "Bound attempts, respect a total deadline and use jitter and load shedding. Retry only when the operation is safe and the failure is plausibly transient."
+      }
+    ],
+    "practiceTasks": [
+      "Add an injected random source to the delay function and test capped full-jitter delays without sleeping."
+    ],
+    "references": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/",
+      "https://docs.spring.io/spring-framework/reference/"
+    ],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "optimistic-concurrency",
+    "domain": "backend",
+    "module": "Data consistency",
+    "title": "Optimistic locking & version checks",
+    "level": "intermediate",
+    "prerequisites": [],
+    "learningObjectives": [
+      "The expected version no longer matches, or the resource is absent.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nOptimistic concurrency accepts that conflicts are uncommon and detects them when a change is committed. A client reads a version with the resource, then submits an update conditioned on that version. If another writer has already changed the resource, the condition fails and the caller must refresh, merge or retry according to the domain. Silent last-write-wins would otherwise overwrite work.\n\n## Follow the mechanism\n\nIn SQL, use an update whose predicate contains both ID and expected version, and increment the version in the same statement. Zero affected rows indicates a conflict or missing resource. The Java example demonstrates the compare-and-set concept in one process; a database conditional write is needed across Worker instances. The version represents resource state and should not be confused with a client timestamp.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nReturn a documented conflict response after distinguishing authorization and absence as needed. Do not blindly retry a stale write that could overwrite a different user decision. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nSpecify an ETag and If-Match update contract and a test with two clients reading the same version. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nVersion checks detect stale state, but the recovery action is a product decision. Automatically retrying a counter increment may be safe when the operation is expressed as a delta. Automatically retrying an edited document with the old full body can erase someone else's work. Keep the user's intended operation separate from a snapshot of state when designing a retryable API.",
+    "mentalModel": "Optimistic concurrency accepts that conflicts are uncommon and detects them when a change is committed.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var version = new java.util.concurrent.atomic.AtomicInteger(4);\n        System.out.println(version.compareAndSet(4, 5));\n        System.out.println(version.compareAndSet(4, 5));\n    }\n}\n",
+        "expectedOutput": "true\nfalse",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "In SQL, use an update whose predicate contains both ID and expected version, and increment the version in the same statement. Zero affected rows indicates a conflict or missing resource. The Java example demonstrates the compare-and-set concept in one process; a database conditional write is needed across Worker instances. The version represents resource state and should not be confused with a client timestamp.",
+    "pitfalls": [
+      "Checking the version separately from writing",
+      "Using wall clocks as conflict-free versions",
+      "Blindly retrying user edits"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "What should a zero-row versioned update mean to the API?",
+        "shortAnswer": "The expected version no longer matches, or the resource is absent.",
+        "deepAnswer": "Return a documented conflict response after distinguishing authorization and absence as needed. Do not blindly retry a stale write that could overwrite a different user decision.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Specify an ETag and If-Match update contract and a test with two clients reading the same version. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Checking the version separately from writing.",
+        "deepAnswer": "In SQL, use an update whose predicate contains both ID and expected version, and increment the version in the same statement. Zero affected rows indicates a conflict or missing resource. The Java example demonstrates the compare-and-set concept in one process; a database conditional write is needed across Worker instances. The version represents resource state and should not be confused with a client timestamp.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "What should a zero-row versioned update mean to the API?",
+        "answer": "Return a documented conflict response after distinguishing authorization and absence as needed. Do not blindly retry a stale write that could overwrite a different user decision."
+      }
+    ],
+    "practiceTasks": [
+      "Specify an ETag and If-Match update contract and a test with two clients reading the same version."
+    ],
+    "references": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/",
+      "https://docs.spring.io/spring-framework/reference/"
+    ],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "cursor-pagination",
+    "domain": "backend",
+    "module": "REST and SQL",
+    "title": "Stable ordering & cursor pagination",
+    "level": "intermediate",
+    "prerequisites": [],
+    "learningObjectives": [
+      "Several records can have the same timestamp.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nPagination requires a total ordering. Ordering only by a non-unique timestamp leaves ties ambiguous, so add a unique ID as a deterministic tie-breaker. Offset pagination is simple but may skip or repeat items when rows are inserted before the offset. Keyset pagination instead resumes after the last observed ordering tuple, reducing this shifting-boundary problem.\n\n## Follow the mechanism\n\nA cursor should encode the ordering fields and be validated as untrusted input. It is not authorization: every query must still restrict ownership. For descending createdAt and ID, the next page predicate must use the matching lexicographic less-than relation. Mutable sort fields can still move records across the boundary; a snapshot or an immutable ordering field is needed for stronger consistency.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nInclude a unique tie-breaker in both the order clause and the cursor predicate. An index matching the ownership filter and ordering helps the database avoid scanning earlier pages. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nDesign a two-column descending cursor predicate and test records sharing an identical timestamp. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nA cursor format should be versioned so changing the sort representation does not silently corrupt navigation. Cap page size on the server regardless of the client parameter. For a private feed, every page must reapply the owner predicate; possession of a cursor never grants access. Deletions and new inserts should be included in tests because they expose the practical difference from offsets.",
+    "mentalModel": "Pagination requires a total ordering.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var values = java.util.List.of(10, 20, 30, 40);\n        System.out.println(values.stream().filter(id -> id > 20).limit(2).toList());\n    }\n}\n",
+        "expectedOutput": "[30, 40]",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "A cursor should encode the ordering fields and be validated as untrusted input. It is not authorization: every query must still restrict ownership. For descending createdAt and ID, the next page predicate must use the matching lexicographic less-than relation. Mutable sort fields can still move records across the boundary; a snapshot or an immutable ordering field is needed for stronger consistency.",
+    "pitfalls": [
+      "Treating cursors as trusted SQL",
+      "Omitting ownership filters",
+      "Using an order inconsistent with the cursor predicate"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Why is ORDER BY created_at alone insufficient for a stable cursor?",
+        "shortAnswer": "Several records can have the same timestamp.",
+        "deepAnswer": "Include a unique tie-breaker in both the order clause and the cursor predicate. An index matching the ownership filter and ordering helps the database avoid scanning earlier pages.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Design a two-column descending cursor predicate and test records sharing an identical timestamp. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Treating cursors as trusted SQL.",
+        "deepAnswer": "A cursor should encode the ordering fields and be validated as untrusted input. It is not authorization: every query must still restrict ownership. For descending createdAt and ID, the next page predicate must use the matching lexicographic less-than relation. Mutable sort fields can still move records across the boundary; a snapshot or an immutable ordering field is needed for stronger consistency.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Why is ORDER BY created_at alone insufficient for a stable cursor?",
+        "answer": "Include a unique tie-breaker in both the order clause and the cursor predicate. An index matching the ownership filter and ordering helps the database avoid scanning earlier pages."
+      }
+    ],
+    "practiceTasks": [
+      "Design a two-column descending cursor predicate and test records sharing an identical timestamp."
+    ],
+    "references": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/",
+      "https://docs.spring.io/spring-framework/reference/"
+    ],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "bounded-rate-limits",
+    "domain": "backend",
+    "module": "Traffic management",
+    "title": "Rate limits & fixed-window boundaries",
+    "level": "intermediate",
+    "prerequisites": [],
+    "learningObjectives": [
+      "A full allowance can occur on both sides of the boundary.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nA rate limiter turns a capacity policy into a decision for each request. A fixed window counts requests in discrete intervals. It is simple, but a client may send a full window at the end of one interval and another full window immediately after the boundary. The allowed burst can therefore exceed the intuitive rolling-window rate.\n\n## Follow the mechanism\n\nThe example is an injected-time single-process model to expose boundary semantics. A production distributed limiter needs atomic shared state or an edge-native limiter with a documented approximation. Identify the key scope: IP, user, API credential or endpoint. Do not let arbitrary user-supplied keys create unbounded cardinality, and decide whether storage failure should fail open or closed for each endpoint.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nA token bucket permits an explicit burst capacity while controlling refill rate. Sliding-window approaches can approximate or enforce rolling limits at higher storage and coordination cost. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nImplement a token bucket with an injected monotonic clock and test capacity, refill and clock boundaries. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nA rate limit is separate from a concurrency limit. Ten slow requests can occupy scarce connections for much longer than ten fast requests, even if both satisfy the same per-second budget. Use request-rate controls for admission and concurrent-work limits for occupied resources. Define the rejection response and retry guidance so clients can back off instead of producing an immediate retry storm.",
+    "mentalModel": "A rate limiter turns a capacity policy into a decision for each request.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var limit = new Window(2);\n        System.out.println(limit.allow(0));\n        System.out.println(limit.allow(1));\n        System.out.println(limit.allow(2));\n        System.out.println(limit.allow(1000));\n    }\n    static final class Window {\n        final int limit; long bucket = -1; int count;\n        Window(int limit) { this.limit = limit; }\n        synchronized boolean allow(long nowMillis) {\n            long current = nowMillis / 1000;\n            if (current != bucket) { bucket = current; count = 0; }\n            if (count >= limit) return false;\n            count++; return true;\n        }\n    }\n}\n",
+        "expectedOutput": "true\ntrue\nfalse\ntrue",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "The example is an injected-time single-process model to expose boundary semantics. A production distributed limiter needs atomic shared state or an edge-native limiter with a documented approximation. Identify the key scope: IP, user, API credential or endpoint. Do not let arbitrary user-supplied keys create unbounded cardinality, and decide whether storage failure should fail open or closed for each endpoint.",
+    "pitfalls": [
+      "Incrementing counters nonatomically",
+      "Keeping global limits only in one instance",
+      "Leaving key cardinality unbounded"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "What burst can occur at a fixed-window boundary?",
+        "shortAnswer": "A full allowance can occur on both sides of the boundary.",
+        "deepAnswer": "A token bucket permits an explicit burst capacity while controlling refill rate. Sliding-window approaches can approximate or enforce rolling limits at higher storage and coordination cost.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Implement a token bucket with an injected monotonic clock and test capacity, refill and clock boundaries. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Incrementing counters nonatomically.",
+        "deepAnswer": "The example is an injected-time single-process model to expose boundary semantics. A production distributed limiter needs atomic shared state or an edge-native limiter with a documented approximation. Identify the key scope: IP, user, API credential or endpoint. Do not let arbitrary user-supplied keys create unbounded cardinality, and decide whether storage failure should fail open or closed for each endpoint.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "What burst can occur at a fixed-window boundary?",
+        "answer": "A token bucket permits an explicit burst capacity while controlling refill rate. Sliding-window approaches can approximate or enforce rolling limits at higher storage and coordination cost."
+      }
+    ],
+    "practiceTasks": [
+      "Implement a token bucket with an injected monotonic clock and test capacity, refill and clock boundaries."
+    ],
+    "references": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/",
+      "https://docs.spring.io/spring-framework/reference/"
+    ],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "deadlock-and-lock-order",
+    "domain": "cs",
+    "module": "Operating systems",
+    "title": "Deadlock & consistent lock ordering",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "It prevents a circular wait among compliant operations.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nDeadlock occurs when participants wait on a cycle of resources that none can release while waiting. The classic conditions are mutual exclusion, holding resources while requesting more, no forced preemption and a circular wait. A consistent global lock order breaks the circular-wait condition. It is easier to enforce one explicit ordering protocol than to diagnose a rare production hang after it occurs.\n\n## Follow the mechanism\n\nIf one operation locks account A then B and another locks B then A, each may hold one monitor while waiting for the other. Ordering by a stable unique account ID makes both operations acquire the same first lock. Reentrant locking does not fix a cycle across different monitors. Timeouts can make waits bounded, but the caller still needs to unwind partial work and report failure without violating the business invariant.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nEvery operation must follow the same stable ordering. A single code path that takes the locks in reverse order can reintroduce the cycle. The order key must be unique, immutable and available before acquiring either lock. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nRun transfers in both directions concurrently and verify that total money remains constant and all tasks finish. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nLock ordering is a protocol shared by all code touching those resources, not a local optimization. Keep the protected critical section small, avoid blocking network calls while holding monitors and inspect thread dumps for ownership and waiting edges during an incident. A timeout or watchdog should preserve evidence so operators can distinguish a lock cycle from merely slow work.",
+    "mentalModel": "Deadlock occurs when participants wait on a cycle of resources that none can release while waiting.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var a = new Account(1, 100);\n        var b = new Account(2, 0);\n        transfer(a,b,30);\n        System.out.println(a.balance + \":\" + b.balance);\n    }\n    static final class Account {\n        final int id; long balance;\n        Account(int id,long balance) { this.id=id; this.balance=balance; }\n    }\n    static void transfer(Account from,Account to,long amount) {\n        if (from==to || from.id==to.id || amount<=0) throw new IllegalArgumentException();\n        Account first=from.id<to.id?from:to, second=first==from?to:from;\n        synchronized(first) { synchronized(second) {\n            if (from.balance<amount) throw new IllegalStateException();\n            from.balance-=amount; to.balance+=amount;\n        }}\n    }\n}\n",
+        "expectedOutput": "70:30",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "If one operation locks account A then B and another locks B then A, each may hold one monitor while waiting for the other. Ordering by a stable unique account ID makes both operations acquire the same first lock. Reentrant locking does not fix a cycle across different monitors. Timeouts can make waits bounded, but the caller still needs to unwind partial work and report failure without violating the business invariant.",
+    "pitfalls": [
+      "Ordering by mutable fields",
+      "Calling unknown code while holding a lock",
+      "Testing only one acquisition direction"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Which deadlock condition does a global lock order remove?",
+        "shortAnswer": "It prevents a circular wait among compliant operations.",
+        "deepAnswer": "Every operation must follow the same stable ordering. A single code path that takes the locks in reverse order can reintroduce the cycle. The order key must be unique, immutable and available before acquiring either lock.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Run transfers in both directions concurrently and verify that total money remains constant and all tasks finish. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Ordering by mutable fields.",
+        "deepAnswer": "If one operation locks account A then B and another locks B then A, each may hold one monitor while waiting for the other. Ordering by a stable unique account ID makes both operations acquire the same first lock. Reentrant locking does not fix a cycle across different monitors. Timeouts can make waits bounded, but the caller still needs to unwind partial work and report failure without violating the business invariant.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Which deadlock condition does a global lock order remove?",
+        "answer": "Every operation must follow the same stable ordering. A single code path that takes the locks in reverse order can reintroduce the cycle. The order key must be unique, immutable and available before acquiring either lock."
+      }
+    ],
+    "practiceTasks": [
+      "Run transfers in both directions concurrently and verify that total money remains constant and all tasks finish."
+    ],
+    "references": [
+      "https://docs.oracle.com/en/java/javase/21/docs/api/java.management/java/lang/management/ThreadMXBean.html"
+    ],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "composite-index-order",
+    "domain": "cs",
+    "module": "Database systems",
+    "title": "Composite indexes & query shape",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "Keys are ordered lexicographically, so leading columns determine contiguous ranges.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nAn index is an ordered access structure whose usefulness depends on the query predicate and requested ordering. A composite B-tree index orders keys lexicographically. For an index on ownerId, createdAt and id, records for one owner are contiguous and then ordered by creation time and ID. This supports an owner-filtered timeline efficiently. It does not imply that arbitrary searches on the second column alone have the same access path.\n\n## Follow the mechanism\n\nEquality predicates on leading columns can narrow an index range. A subsequent range predicate and ordering may be served by the remaining key sequence, depending on the query and database planner. An index also costs storage, write maintenance and cache residency. Covering an entire wide row can reduce table lookups but greatly increase those costs. Use an actual EXPLAIN plan and representative data before claiming an index improves a workload.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nA query constraining ownerId can efficiently scan that owner's time-ordered records. A query only constraining createdAt lacks the same leading equality constraint and may require a different access path or wider scan. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nCreate a PostgreSQL table with an owner-filtered timeline index and compare EXPLAIN plans for queries with and without the owner predicate. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nThe runnable Java example models key ordering only. It does not implement a B-tree or estimate database I/O. On the real database, inspect estimated and actual row counts, scan type and buffer behavior. Test a common owner and an unusually large owner, because skew can make one average selectivity assumption misleading for the most important requests.",
+    "mentalModel": "An index is an ordered access structure whose usefulness depends on the query predicate and requested ordering.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        var rows = new java.util.ArrayList<>(java.util.List.of(new Row(2,10),new Row(1,30),new Row(1,20)));\n        rows.sort(java.util.Comparator.comparingInt(Row::owner).thenComparingInt(Row::created));\n        System.out.println(rows);\n    }\n    record Row(int owner,int created) {}\n}\n",
+        "expectedOutput": "[Row[owner=1, created=20], Row[owner=1, created=30], Row[owner=2, created=10]]",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "Equality predicates on leading columns can narrow an index range. A subsequent range predicate and ordering may be served by the remaining key sequence, depending on the query and database planner. An index also costs storage, write maintenance and cache residency. Covering an entire wide row can reduce table lookups but greatly increase those costs. Use an actual EXPLAIN plan and representative data before claiming an index improves a workload.",
+    "pitfalls": [
+      "Adding an index without measuring selectivity",
+      "Ignoring index write cost",
+      "Using an unstable nonunique pagination order"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Why does column order matter in a composite B-tree index?",
+        "shortAnswer": "Keys are ordered lexicographically, so leading columns determine contiguous ranges.",
+        "deepAnswer": "A query constraining ownerId can efficiently scan that owner's time-ordered records. A query only constraining createdAt lacks the same leading equality constraint and may require a different access path or wider scan.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Create a PostgreSQL table with an owner-filtered timeline index and compare EXPLAIN plans for queries with and without the owner predicate. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Adding an index without measuring selectivity.",
+        "deepAnswer": "Equality predicates on leading columns can narrow an index range. A subsequent range predicate and ordering may be served by the remaining key sequence, depending on the query and database planner. An index also costs storage, write maintenance and cache residency. Covering an entire wide row can reduce table lookups but greatly increase those costs. Use an actual EXPLAIN plan and representative data before claiming an index improves a workload.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Why does column order matter in a composite B-tree index?",
+        "answer": "A query constraining ownerId can efficiently scan that owner's time-ordered records. A query only constraining createdAt lacks the same leading equality constraint and may require a different access path or wider scan."
+      }
+    ],
+    "practiceTasks": [
+      "Create a PostgreSQL table with an owner-filtered timeline index and compare EXPLAIN plans for queries with and without the owner predicate."
+    ],
+    "references": ["https://www.postgresql.org/docs/current/indexes-multicolumn.html"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "network-deadline-budgets",
+    "domain": "cs",
+    "module": "Computer networks",
+    "title": "Request deadlines & network uncertainty",
+    "level": "beginner",
+    "prerequisites": [],
+    "learningObjectives": [
+      "No. The server may already have committed and lost the response.",
+      "Explain the mechanism using the runnable example.",
+      "Identify boundary cases and design a focused test."
+    ],
+    "explanationMd": "## The central idea\n\nA network request can fail at name resolution, connection establishment, TLS negotiation, request transmission, server processing or response delivery. A timeout reports that the caller stopped waiting; it does not identify which remote effects occurred. Design APIs so a caller can recover from that uncertainty through idempotency or a queryable operation status. Distinguish a total deadline from separate per-stage timeout settings.\n\n## Follow the mechanism\n\nA total deadline is an instant beyond which the result is no longer useful to the caller. Each downstream operation receives only the remaining budget. Resetting a full timeout for every retry can make total latency far larger than the advertised service deadline. Inside a process, elapsed timing should use a monotonic clock. A deadline propagated between machines needs a clock-skew policy or a protocol that communicates remaining budget conservatively.\n\n## Read the example as a contract\n\nThe Java program below is intentionally small enough to trace by hand. Before running it, write down the output and identify the exact operation that determines each line. Compile it as `Main.java` with Java 21 or later, then run `java Main`. An observed output is evidence about this execution; the explanation must still follow the language or library contract rather than an accidental implementation detail. Change one assumption and predict which assertion would stop being true.\n\n## Move from a demonstration to a service\n\nRetry the same logical operation with a stable idempotency key or inspect its recorded status. A new key can create a duplicate effect. The remaining deadline still bounds any retry or reconciliation attempt. In production, put this contract at a clear boundary: accept validated inputs, expose an explicit result or failure, and make ownership of mutable state visible. Document which guarantees hold inside one process and which require database or infrastructure coordination. A small standalone example teaches the mechanism but does not establish distributed durability, latency or fault tolerance. Those guarantees need separate design and integration tests.\n\n## Build a useful test\n\nStart with the ordinary success path, then test the smallest input, a boundary condition and an invalid request. Where timing matters, inject a clock or control the executor instead of relying on sleeps. Where equality matters, construct distinct objects with equal logical values. For concurrent code, test the invariant across many operations and also explain why the synchronization protocol protects it; a passing stress test alone cannot prove the absence of a race.\n\n## Practice and explain\n\nDraw a request timeline with DNS, connection, processing and retry delay, then allocate one total 800 ms budget without resetting it. First implement the smallest version that satisfies the stated contract. Explain why you chose its state representation and error behavior. Then describe one realistic change that would require a different design. During an interview, begin with the invariant and use the example to demonstrate it, rather than listing annotations or API names. Return to the recall question on a separate day and recover the mechanism without reading this page.\n\n## A production review question\n\nTimeout configuration should be tested with a dependency that can delay acceptance, response headers and response bodies independently. A connection timeout does not necessarily bound a slow response body. Count cancelled work and abandoned server operations as well as visible client errors, since a caller giving up does not automatically stop expensive remote processing.",
+    "mentalModel": "A network request can fail at name resolution, connection establishment, TLS negotiation, request transmission, server processing or response delivery.",
+    "javaExamples": [
+      {
+        "code": "public class Main {\n    public static void main(String[] args) throws Exception {\n        System.out.println(remainingMillis(1000,700));\n        System.out.println(remainingMillis(1000,1200));\n    }\n    static long remainingMillis(long deadline,long now) {\n        return Math.max(0,deadline-now);\n    }\n}\n",
+        "expectedOutput": "300\n0",
+        "explanation": "Standalone Java 21 example. Its output follows the stated contract; service-level persistence or distributed guarantees are outside this example."
+      }
+    ],
+    "internals": "A total deadline is an instant beyond which the result is no longer useful to the caller. Each downstream operation receives only the remaining budget. Resetting a full timeout for every retry can make total latency far larger than the advertised service deadline. Inside a process, elapsed timing should use a monotonic clock. A deadline propagated between machines needs a clock-skew policy or a protocol that communicates remaining budget conservatively.",
+    "pitfalls": [
+      "Treating timeout as proof of no side effect",
+      "Resetting deadlines on retries",
+      "Measuring elapsed duration with an adjustable wall clock"
+    ],
+    "realWorldUse": "Use this contract when reviewing service boundaries, debugging unexpected behavior and deciding which guarantees belong in application code versus shared infrastructure.",
+    "interviewQA": [
+      {
+        "question": "Does a client timeout prove that the server rolled back the operation?",
+        "shortAnswer": "No. The server may already have committed and lost the response.",
+        "deepAnswer": "Retry the same logical operation with a stable idempotency key or inspect its recorded status. A new key can create a duplicate effect. The remaining deadline still bounds any retry or reconciliation attempt.",
+        "followups": [
+          "Which assumption makes this answer true?",
+          "How would you demonstrate the failure mode?"
+        ]
+      },
+      {
+        "question": "How would you test this behavior?",
+        "shortAnswer": "Test the observable contract with controlled inputs and explicit boundary cases.",
+        "deepAnswer": "Draw a request timeline with DNS, connection, processing and retry delay, then allocate one total 800 ms budget without resetting it. Separate deterministic unit tests from integration tests that depend on infrastructure. For concurrency, describe the invariant and coordination mechanism as well as running repeated operations.",
+        "followups": ["What would a misleading passing test miss?"]
+      },
+      {
+        "question": "What is the most dangerous production misconception here?",
+        "shortAnswer": "Treating timeout as proof of no side effect.",
+        "deepAnswer": "A total deadline is an instant beyond which the result is no longer useful to the caller. Each downstream operation receives only the remaining budget. Resetting a full timeout for every retry can make total latency far larger than the advertised service deadline. Inside a process, elapsed timing should use a monotonic clock. A deadline propagated between machines needs a clock-skew policy or a protocol that communicates remaining budget conservatively.",
+        "followups": ["How would a code review catch this before deployment?"]
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Does a client timeout prove that the server rolled back the operation?",
+        "answer": "Retry the same logical operation with a stable idempotency key or inspect its recorded status. A new key can create a duplicate effect. The remaining deadline still bounds any retry or reconciliation attempt."
+      }
+    ],
+    "practiceTasks": [
+      "Draw a request timeline with DNS, connection, processing and retry delay, then allocate one total 800 ms budget without resetting it."
+    ],
+    "references": ["https://www.rfc-editor.org/rfc/rfc9110.html"],
+    "readingMinutes": 20,
+    "status": "published",
+    "updatedAt": "2026-10-16"
+  }
+]

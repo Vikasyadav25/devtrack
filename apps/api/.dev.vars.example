@@ -1,0 +1,8 @@
+# Copy to apps/api/.dev.vars.local (ignored by Git), then restart the API.
+GOOGLE_CLIENT_ID=""
+OWNER_EMAIL=""
+# Optional real email delivery (otherwise loopback-only local preview is used).
+RESEND_API_KEY=""
+MAIL_FROM=""
+# Set false after configuring the sender to send real emails during local development.
+LOCAL_EMAIL_PREVIEW="true"

@@ -1,0 +1,338 @@
+[
+  {
+    "slug": "syllabus-1",
+    "title": "Big-O and complexity",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-2",
+    "title": "Array traversal",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-3",
+    "title": "String foundations",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-4",
+    "title": "HashMap and HashSet",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-5",
+    "title": "Sorting and comparators",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-6",
+    "title": "Two pointers",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-7",
+    "title": "Fixed-size sliding window",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-8",
+    "title": "Variable-size sliding window",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-9",
+    "title": "Prefix sums and difference arrays",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-10",
+    "title": "Binary search on arrays",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-11",
+    "title": "Binary search on answer",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-12",
+    "title": "Linked-list pointer manipulation",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-13",
+    "title": "Stack parsing",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-14",
+    "title": "Queue and deque",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-15",
+    "title": "Recursion foundations",
+    "level": "beginner",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-16",
+    "title": "Monotonic stack",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-17",
+    "title": "Monotonic deque",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-18",
+    "title": "Intervals and sweep line",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-19",
+    "title": "Heap and top-K",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-20",
+    "title": "Tree DFS",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-21",
+    "title": "Tree BFS",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-22",
+    "title": "Binary search trees",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-23",
+    "title": "Trie",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-24",
+    "title": "Graph BFS and DFS",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-25",
+    "title": "Topological sorting",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-26",
+    "title": "Shortest paths",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-27",
+    "title": "Disjoint set union",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-28",
+    "title": "Backtracking enumeration",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-29",
+    "title": "Greedy proofs",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-30",
+    "title": "Dynamic programming 1D",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-31",
+    "title": "Grid dynamic programming",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-32",
+    "title": "Knapsack",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-33",
+    "title": "Sequence DP and LIS",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-34",
+    "title": "Bit manipulation",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-35",
+    "title": "Matrix traversal",
+    "level": "intermediate",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-36",
+    "title": "String DP",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-37",
+    "title": "Tree and DAG DP",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-38",
+    "title": "Interval DP",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-39",
+    "title": "Bitmask DP",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-40",
+    "title": "MST SCC and bridges",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-41",
+    "title": "State-space shortest path",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-42",
+    "title": "Segment tree and Fenwick tree",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-43",
+    "title": "Sweep line events",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-44",
+    "title": "Binary lifting and LCA",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-45",
+    "title": "KMP rolling hash and Z",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-46",
+    "title": "Sieve GCD and modular arithmetic",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-47",
+    "title": "Meet in the middle",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  },
+  {
+    "slug": "syllabus-48",
+    "title": "Design data structures",
+    "level": "advanced",
+    "status": "draft",
+    "updatedAt": "2026-10-16"
+  }
+]
