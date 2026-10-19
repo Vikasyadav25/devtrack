@@ -83,5 +83,6 @@ export async function readSession(request: Request, env: Env): Promise<string | 
         : [await hashToken(token), seconds(), env.OWNER_EMAIL.toLowerCase()]),
     )
     .first<{ email: string }>();
+  if (env.SINGLE_USER_NAME && row?.email !== env.OWNER_EMAIL.toLowerCase()) return null;
   return row?.email ?? null;
 }

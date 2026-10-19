@@ -25,6 +25,7 @@ export function registerAuthRoutes(app: Hono<AppContext>) {
       clientId: authConfigured(c.env) ? c.env.GOOGLE_CLIENT_ID : null,
       origin: c.env.ALLOWED_ORIGIN,
       emailEnabled: c.env.AUTH_PROVIDER === 'email',
+      singleUser: !!c.env.SINGLE_USER_NAME,
       localEmailPreview: localMailPreview(c.env, c.req.url),
     }),
   );

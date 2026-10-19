@@ -1,5 +1,9 @@
 # DevTrack
 
+Live app: https://devtrack-api.ratnivaofficial.workers.dev/ — frontend and API share one origin,
+with a separate production D1 database and a private username/password login.
+Deploy updates with `npm run deploy`; see [deployment instructions](docs/DEPLOYMENT.md).
+
 Prep Hub: browse all four preparation tracks at `/#/prep-hub`, including 15 public syllabus paths, topic references and direct practice links. See [catalog scope and sources](docs/PREP_HUB.md).
 
 A private Java/backend interview study workspace: original lessons, linked DSA practice, honest attempt history, notes and deterministic spaced review. React + Vite + TypeScript, Tailwind, local shadcn-style primitives, TanStack Query, React Hook Form/Zod, Hono Worker and Cloudflare D1.
@@ -37,4 +41,4 @@ Java checks use `javac` and `java` from PATH, or `DEVTRACK_JAVA_HOME/bin`. Brows
 
 LeetCode blocked automated HEAD checks with HTTP 403 in this environment. Links remain visibly `needsVerification`; the report records the actual response. The bank uses supplied canonical IDs/slugs and original educational summaries, not copied problem statements or solutions.
 
-See [deployment instructions](docs/DEPLOYMENT.md), [architecture](docs/ARCHITECTURE.md), [content guidelines](docs/CONTENT_GUIDELINES.md) and [remaining work](docs/PROGRESS.md). Nothing has been deployed to a real account. Production requires your Cloudflare D1 ID, email sender/API key and GitHub Pages domain configuration. Google OAuth configuration is optional.
+See [deployment instructions](docs/DEPLOYMENT.md), [architecture](docs/ARCHITECTURE.md), [content guidelines](docs/CONTENT_GUIDELINES.md) and [remaining work](docs/PROGRESS.md). Google OAuth configuration is optional.

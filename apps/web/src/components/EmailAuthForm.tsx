@@ -3,7 +3,15 @@ import { Link, useLocation } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Button } from './ui/button';
 type Mode = 'login' | 'register' | 'forgot' | 'reset' | 'verify';
-export function EmailAuthForm({ preview, google }: { preview: boolean; google?: React.ReactNode }) {
+export function EmailAuthForm({
+  preview,
+  google,
+  singleUser = false,
+}: {
+  preview: boolean;
+  google?: React.ReactNode;
+  singleUser?: boolean;
+}) {
   const location = useLocation();
   const linkedMode: Mode | undefined =
     location.pathname === '/reset-password'
@@ -19,7 +27,7 @@ export function EmailAuthForm({ preview, google }: { preview: boolean; google?: 
     [error, setError] = useState(''),
     [message, setMessage] = useState(''),
     [links, setLinks] = useState<{ purpose: string; link: string }[]>([]);
-  const mode = linkedMode ?? selected,
+  const mode = singleUser ? 'login' : (linkedMode ?? selected),
     token = new URLSearchParams(location.search).get('token');
   const labels = {
     login: 'Sign in',
@@ -57,7 +65,9 @@ export function EmailAuthForm({ preview, google }: { preview: boolean; google?: 
             ? { token }
             : mode === 'forgot'
               ? { email }
-              : { email, password };
+              : singleUser
+                ? { username: email, password }
+                : { email, password };
       const path = {
         login: 'login',
         register: 'register',
@@ -97,16 +107,16 @@ export function EmailAuthForm({ preview, google }: { preview: boolean; google?: 
       <form className="stack-form" onSubmit={submit}>
         {['login', 'register', 'forgot'].includes(mode) && (
           <label>
-            Email address
+            {singleUser ? 'Username' : 'Email address'}
             <input
-              name="email"
-              type="email"
-              autoComplete="email"
+              name={singleUser ? 'username' : 'email'}
+              type={singleUser ? 'text' : 'email'}
+              autoComplete={singleUser ? 'username' : 'email'}
               required
               maxLength={254}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@gmail.com"
+              placeholder={singleUser ? 'Your username' : 'you@gmail.com'}
             />
           </label>
         )}
@@ -198,7 +208,7 @@ export function EmailAuthForm({ preview, google }: { preview: boolean; google?: 
           ))}
         </div>
       )}
-      {mode === 'login' && (
+      {mode === 'login' && !singleUser && (
         <div className="auth-form-links">
           <button onClick={() => switchMode('forgot')}>Forgot password?</button>
           <button onClick={() => switchMode('register')}>Create an account</button>

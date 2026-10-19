@@ -33,6 +33,20 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
           VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH || format('/{0}/', github.event.repository.name) }}
+      - name: Link Pages to the full-stack app
+        if: vars.LIVE_APP_URL != ''
+        env:
+          LIVE_APP_URL: ${{ vars.LIVE_APP_URL }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          const target = new URL(process.env.LIVE_APP_URL);
+          if (target.protocol !== 'https:') throw new Error('LIVE_APP_URL must use HTTPS');
+          const url = target.href;
+          const href = url.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
+          const json = JSON.stringify(url).replaceAll('<', '\\u003c');
+          writeFileSync('apps/web/dist/index.html', `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DevTrack</title><p><a href="${href}">Open DevTrack</a></p><script>const target=new URL(${json});if(location.hash)target.hash=location.hash;location.replace(target.href);</script></html>`);
+          NODE
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/web/dist

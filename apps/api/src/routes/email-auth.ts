@@ -11,7 +11,12 @@ import {
   seconds,
   sessionLifetime,
 } from '../session';
-import { dummyPasswordHash, hashPassword, verifyPassword } from '../password';
+import {
+  dummyPasswordHash,
+  hashPassword,
+  verifyPassword,
+  verifyPrivatePassword,
+} from '../password';
 import { deliverAccountEmail, localMailPreview, mailConfigured } from '../mail';
 
 const emailInput = z.string().trim().toLowerCase().email().max(254);
@@ -70,6 +75,8 @@ export function registerEmailAuthRoutes(app: Hono<AppContext>) {
       return next();
     if (c.env.AUTH_PROVIDER !== 'email')
       return c.json({ error: 'Email sign-in is not enabled.' }, 404);
+    if (c.env.SINGLE_USER_NAME && c.req.path !== '/api/v1/auth/login')
+      return c.json({ error: 'This workspace uses a private account.' }, 404);
     await next();
   });
   app.post('/api/v1/auth/register', async (c) => {
@@ -118,10 +125,22 @@ export function registerEmailAuthRoutes(app: Hono<AppContext>) {
     return c.json(sent);
   });
   app.post('/api/v1/auth/login', async (c) => {
-    const b = z
-      .object({ email: emailInput, password: z.string().min(1).max(128) })
-      .strict()
-      .parse(await c.req.json());
+    const input = await c.req.json();
+    const privateLogin = c.env.SINGLE_USER_NAME
+      ? z
+          .object({
+            username: z.string().trim().min(1).max(254),
+            password: z.string().min(1).max(128),
+          })
+          .strict()
+          .parse(input)
+      : null;
+    const b = privateLogin
+      ? { email: c.env.OWNER_EMAIL, password: privateLogin.password }
+      : z
+          .object({ email: emailInput, password: z.string().min(1).max(128) })
+          .strict()
+          .parse(input);
     const at = seconds(),
       emailHash = await hashToken(b.email);
     if (!(await emailBudget(c.env.DB, b.email, 'login', 900, 10)))
@@ -131,8 +150,18 @@ export function registerEmailAuthRoutes(app: Hono<AppContext>) {
     )
       .bind(b.email)
       .first<{ id: string; password_hash: string; email_verified_at: number | null }>();
-    const valid = await verifyPassword(b.password, account?.password_hash ?? dummyPasswordHash);
-    if (!account || !valid) return c.json({ error: 'Email or password is incorrect.' }, 401);
+    const valid = privateLogin
+      ? await verifyPrivatePassword(b.password, account?.password_hash)
+      : await verifyPassword(b.password, account?.password_hash ?? dummyPasswordHash);
+    if (!account || !valid || (privateLogin && privateLogin.username !== c.env.SINGLE_USER_NAME))
+      return c.json(
+        {
+          error: c.env.SINGLE_USER_NAME
+            ? 'Username or password is incorrect.'
+            : 'Email or password is incorrect.',
+        },
+        401,
+      );
     if (!account.email_verified_at)
       return c.json(
         {

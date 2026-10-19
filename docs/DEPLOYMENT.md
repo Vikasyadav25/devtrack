@@ -1,4 +1,35 @@
-# Deployment: GitHub Pages + Worker + D1
+# Deployment: Cloudflare Worker + D1
+
+## Current deployment
+
+The live app and API share `https://devtrack-api.ratnivaofficial.workers.dev/`.
+Wrangler serves `apps/web/dist` as static assets and routes `/api/*` to the existing Hono API.
+This keeps the existing secure session cookies on the same origin without a custom domain.
+The GitHub Pages workflow redirects to this app when the repository variable `LIVE_APP_URL`
+is set to that URL, preserving hash routes. Without the variable, it publishes the standalone frontend.
+
+The production `devtrack` D1 database is separate from local/test databases. All four migrations
+have been applied and curriculum seeded. No local accounts, notes, or progress were uploaded.
+
+To deploy an update from the repository root, use `npm run deploy` with `VITE_BASE_PATH=/`
+and no `VITE_API_BASE_URL` override. This builds the frontend and deploys the Worker and assets.
+Keep the root build for Cloudflare; the GitHub Pages build uses its own repository subpath.
+
+Production uses a private username login configured by `SINGLE_USER_NAME` and `OWNER_EMAIL`.
+The owner's salted password hash is stored in `password_accounts`, never in source code or
+frontend assets. Sessions use the existing secure HttpOnly cookies, expiry and rate limits.
+Private login uses native scrypt (`N=16384, r=8, p=5`) because the hosted Workers runtime
+rejects the existing email mode's 600,000-iteration PBKDF2 cost. The email mode is retained
+for local compatibility and must not be enabled in production without addressing that runtime limit.
+Public registration, verification and password recovery routes are disabled in this mode.
+Password changes must be performed by the administrator; do not re-seed account credentials
+when deploying curriculum updates. Neither public development mail previews nor a login bypass
+are enabled. Local and test environments retain the existing email registration flow.
+
+The sections below describe the alternative custom-domain/API setup and optional identity providers.
+
+Live checks on 19 October 2026 passed: username login, authenticated session after reload,
+Secure/HttpOnly/Lax cookie flags, and creating, reading and deleting a temporary note in D1.
 
 ## Authentication and domains
 

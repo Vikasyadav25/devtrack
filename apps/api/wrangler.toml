@@ -2,20 +2,30 @@ name = "devtrack-api"
 main = "src/index.ts"
 compatibility_date = "2026-01-01"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[assets]
+directory = "../web/dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
 
 [vars]
 ENVIRONMENT = "production"
 AUTH_PROVIDER = "email"
 GOOGLE_CLIENT_ID = ""
-ALLOWED_ORIGIN = "https://YOUR_USERNAME.github.io"
-ACCESS_TEAM_DOMAIN = "https://YOUR_TEAM.cloudflareaccess.com"
-ACCESS_AUD = "CONFIGURE_ACCESS_APPLICATION_AUDIENCE"
-OWNER_EMAIL = "CONFIGURE_OWNER_EMAIL"
+ALLOWED_ORIGIN = "https://devtrack-api.ratnivaofficial.workers.dev"
+APP_URL = "https://devtrack-api.ratnivaofficial.workers.dev/"
+LOCAL_AUTH = "false"
+LOCAL_EMAIL_PREVIEW = "false"
+ACCESS_TEAM_DOMAIN = ""
+ACCESS_AUD = ""
+OWNER_EMAIL = "vikas@devtrack.invalid"
+SINGLE_USER_NAME = "vikas"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "devtrack"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "3a17e57a-d5f7-4ab3-a5a9-cca3abbb885c"
 migrations_dir = "../../migrations"
 
 [env.test.vars]

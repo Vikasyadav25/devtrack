@@ -3,8 +3,29 @@ import { app } from '../../apps/api/src/index';
 import type { Env } from '../../apps/api/src/auth';
 import { testDatabase } from './sqlite';
 import { seconds } from '../../apps/api/src/session';
+import { hashPrivatePassword } from '../../apps/api/src/password';
 let fixture: ReturnType<typeof testDatabase>, env: Env;
 const password = 'A sufficiently long test passphrase';
+it('allows only the configured private username and disables public account routes', async () => {
+  const email = await verified();
+  env.SINGLE_USER_NAME = 'vikas';
+  env.OWNER_EMAIL = email;
+  fixture.sqlite
+    .prepare('UPDATE password_accounts SET password_hash=?')
+    .run(await hashPrivatePassword('vikas'));
+  expect((await request('/auth/register', { email, password })).status).toBe(404);
+  expect((await request('/auth/forgot-password', { email })).status).toBe(404);
+  expect(
+    (await request('/auth/login', { username: 'someone-else', password: 'vikas' })).status,
+  ).toBe(401);
+  expect((await request('/auth/login', { username: 'vikas', password: 'wrong' })).status).toBe(401);
+  expect((await request('/auth/login', { email, password: 'vikas' })).status).toBe(400);
+  const response = await request('/auth/login', { username: 'vikas', password: 'vikas' });
+  expect(response.status).toBe(200);
+  expect(
+    (await request('/me', undefined, response.headers.get('set-cookie')!.split(';')[0])).status,
+  ).toBe(200);
+}, 15000);
 beforeEach(() => {
   fixture = testDatabase();
   env = {

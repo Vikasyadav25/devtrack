@@ -14,6 +14,7 @@ export interface Env {
   RESEND_API_KEY?: string;
   MAIL_FROM?: string;
   APP_URL?: string;
+  SINGLE_USER_NAME?: string;
 }
 const keys = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
 export async function authenticate(request: Request, env: Env): Promise<string | null> {

@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "concurrently -k \"npm run dev:api\" \"npm run dev:web\"",
     "dev:web": "vite --config apps/web/vite.config.ts",
+    "deploy": "npm run build && wrangler deploy --config apps/api/wrangler.toml --env=",
     "dev:api": "wrangler dev --config apps/api/wrangler.toml --env local --ip 127.0.0.1 --port 8787",
     "dev:api:test": "wrangler dev --config apps/api/wrangler.toml --env test --ip 127.0.0.1 --port 8788",
     "dev:web:test": "vite --config apps/web/vite.config.ts --mode e2e --port 5174 --strictPort",

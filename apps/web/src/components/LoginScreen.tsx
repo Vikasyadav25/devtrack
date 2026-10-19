@@ -109,6 +109,7 @@ export function LoginScreen() {
         clientId: string | null;
         origin: string;
         emailEnabled: boolean;
+        singleUser: boolean;
         localEmailPreview: boolean;
       }>('/auth/config'),
     retry: false,
@@ -161,6 +162,7 @@ export function LoginScreen() {
                   : 'email'
             }
             preview={config.data.localEmailPreview}
+            singleUser={config.data.singleUser}
             google={
               config.data.configured && challenge.data ? (
                 <GoogleButton clientId={config.data.clientId!} nonce={challenge.data.nonce} />
