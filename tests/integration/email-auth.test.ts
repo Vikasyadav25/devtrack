@@ -18,7 +18,9 @@ it('allows only the configured private username and disables public account rout
   expect(
     (await request('/auth/login', { username: 'someone-else', password: 'short' })).status,
   ).toBe(401);
-  expect((await request('/auth/login', { username: 'private-user', password: 'wrong' })).status).toBe(401);
+  expect(
+    (await request('/auth/login', { username: 'private-user', password: 'wrong' })).status,
+  ).toBe(401);
   expect((await request('/auth/login', { email, password: 'short' })).status).toBe(400);
   const response = await request('/auth/login', { username: 'private-user', password: 'short' });
   expect(response.status).toBe(200);
