@@ -8,19 +8,19 @@ let fixture: ReturnType<typeof testDatabase>, env: Env;
 const password = 'A sufficiently long test passphrase';
 it('allows only the configured private username and disables public account routes', async () => {
   const email = await verified();
-  env.SINGLE_USER_NAME = 'vikas';
+  env.SINGLE_USER_NAME = 'private-user';
   env.OWNER_EMAIL = email;
   fixture.sqlite
     .prepare('UPDATE password_accounts SET password_hash=?')
-    .run(await hashPrivatePassword('vikas'));
+    .run(await hashPrivatePassword('short'));
   expect((await request('/auth/register', { email, password })).status).toBe(404);
   expect((await request('/auth/forgot-password', { email })).status).toBe(404);
   expect(
-    (await request('/auth/login', { username: 'someone-else', password: 'vikas' })).status,
+    (await request('/auth/login', { username: 'someone-else', password: 'short' })).status,
   ).toBe(401);
-  expect((await request('/auth/login', { username: 'vikas', password: 'wrong' })).status).toBe(401);
-  expect((await request('/auth/login', { email, password: 'vikas' })).status).toBe(400);
-  const response = await request('/auth/login', { username: 'vikas', password: 'vikas' });
+  expect((await request('/auth/login', { username: 'private-user', password: 'wrong' })).status).toBe(401);
+  expect((await request('/auth/login', { email, password: 'short' })).status).toBe(400);
+  const response = await request('/auth/login', { username: 'private-user', password: 'short' });
   expect(response.status).toBe(200);
   expect(
     (await request('/me', undefined, response.headers.get('set-cookie')!.split(';')[0])).status,
